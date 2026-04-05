@@ -1,0 +1,49 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { LotService, Granja, Galpon } from '../../core/services/lot.service';
+
+@Component({
+  selector: 'app-galpones',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  template: `
+    <div class="page-container">
+      <div class="page-header">
+        <div><h1>Galpones</h1><p class="subtitle">Gestiona los galpones de tus granjas</p></div>
+        <button class="btn-primary" (click)="openDialog()">📦 Nuevo Galpón</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Nombre</th><th>Granja</th><th>Capacidad</th><th>Acciones</th></tr></thead>
+          <tbody>
+            @for (g of galpones; track g.id) {
+              <tr><td><strong>{{ g.nombre }}</strong></td><td>{{ g.granja?.nombre }}</td><td>{{ g.capacidad ? g.capacidad + ' pollos' : '-' }}</td><td><button class="btn-icon" (click)="deleteGalpon(g)">🗑️</button></td></tr>
+            }
+            @empty { <tr><td colspan="4" class="text-center">No hay galpones registrados</td></tr> }
+          </tbody>
+        </table>
+      </div>
+      @if (dialogVisible) {
+        <div class="modal-overlay" (click)="dialogVisible = false">
+          <div class="modal" (click)="$event.stopPropagation()">
+            <h3>Nuevo Galpón</h3>
+            <div class="form-group"><label>Granja</label><select [(ngModel)]="form.granja_id" class="input-field"><option value="">Seleccionar</option>@for (g of granjas; track g.id) { <option [value]="g.id">{{ g.nombre }}</option> }</select></div>
+            <div class="form-group"><label>Nombre</label><input type="text" [(ngModel)]="form.nombre" placeholder="Ej: Galpón A" class="input-field"/></div>
+            <div class="form-group"><label>Capacidad</label><input type="number" [(ngModel)]="form.capacidad" min="0" placeholder="Opcional" class="input-field"/></div>
+            <div class="modal-actions"><button class="btn-secondary" (click)="dialogVisible = false">Cancelar</button><button class="btn-primary" (click)="save()">Crear</button></div>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+  styles: [` .page-container { max-width: 1200px; margin: 0 auto; } .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; } .page-header h1 { margin: 0; color: #2B2B2B; } .subtitle { margin: 0.25rem 0 0 0; color: #666; } .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); } .data-table { width: 100%; border-collapse: collapse; } .data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; } .data-table th { background: #f8f9fa; font-weight: 600; } .text-center { text-align: center; } .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; } .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; } .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.25rem; } .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; } .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; } .modal h3 { margin: 0 0 1.5rem 0; } .form-group { margin-bottom: 1rem; } .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; } .input-field { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; } .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; } `]
+})
+export class GalponesComponent implements OnInit {
+  private lotService = inject(LotService);
+  galpones: Galpon[] = []; granjas: Granja[] = []; dialogVisible = false; form: any = {};
+  async ngOnInit(): Promise<void> { [this.galpones, this.granjas] = await Promise.all([this.lotService.getGalpones(), this.lotService.getGranjas()]); }
+  openDialog(): void { this.form = {}; this.dialogVisible = true; }
+  async save(): Promise<void> { if (!this.form.granja_id || !this.form.nombre) { alert('Completa los campos'); return; } await this.lotService.createGalpon(this.form); this.dialogVisible = false; [this.galpones, this.granjas] = await Promise.all([this.lotService.getGalpones(), this.lotService.getGranjas()]); }
+  async deleteGalpon(g: Galpon): Promise<void> { if (confirm(`¿Eliminar "${g.nombre}"?`)) { await this.lotService.deleteGalpon(g.id!); this.galpones = await this.lotService.getGalpones(); } }
+}
