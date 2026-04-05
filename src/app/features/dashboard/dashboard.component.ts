@@ -14,84 +14,91 @@ import { LotService, Lote } from '../../core/services/lot.service';
         <p class="subtitle">Resumen de tu operación de engorde</p>
       </div>
       
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon verde">📦</div>
-          <div class="stat-content">
-            <span class="stat-value">{{ stats.lotesActivos }}</span>
-            <span class="stat-label">Lotes Activos</span>
-          </div>
+      @if (loading) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Cargando datos...</p>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon amarillo">🐔</div>
-          <div class="stat-content">
-            <span class="stat-value">{{ stats.totalPollos | number }}</span>
-            <span class="stat-label">Pollos en Granja</span>
+      } @else {
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon verde">📦</div>
+            <div class="stat-content">
+              <span class="stat-value">{{ stats.lotesActivos }}</span>
+              <span class="stat-label">Lotes Activos</span>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon rojo">💔</div>
-          <div class="stat-content">
-            <span class="stat-value">{{ stats.mortalidadPromedio | number:'1.1-1' }}%</span>
-            <span class="stat-label">Mortalidad Promedio</span>
+          <div class="stat-card">
+            <div class="stat-icon amarillo">🐔</div>
+            <div class="stat-content">
+              <span class="stat-value">{{ stats.totalPollos | number }}</span>
+              <span class="stat-label">Pollos en Granja</span>
+            </div>
           </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon azul">⚖️</div>
-          <div class="stat-content">
-            <span class="stat-value">{{ stats.pesoPromedio | number:'1.1-1' }}g</span>
-            <span class="stat-label">Peso Promedio</span>
+          <div class="stat-card">
+            <div class="stat-icon rojo">💔</div>
+            <div class="stat-content">
+              <span class="stat-value">{{ stats.mortalidadPromedio | number:'1.1-1' }}%</span>
+              <span class="stat-label">Mortalidad Promedio</span>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      <div class="content-grid">
-        <div class="card">
-          <div class="card-header">
-            <h2>Lotes Activos</h2>
-            <a routerLink="/lotes" class="link">Ver todos →</a>
+          <div class="stat-card">
+            <div class="stat-icon azul">⚖️</div>
+            <div class="stat-content">
+              <span class="stat-value">{{ stats.pesoPromedio | number:'1.1-1' }}g</span>
+              <span class="stat-label">Peso Promedio</span>
+            </div>
           </div>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Lote</th>
-                <th>Granja/Galpón</th>
-                <th>Días</th>
-                <th>Etapa</th>
-                <th>Pollos</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (lote of lotes.slice(0, 5); track lote.id) {
-                <tr>
-                  <td><strong>{{ lote.nombre || 'Lote ' + lote.id?.slice(0,4) }}</strong></td>
-                  <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
-                  <td>{{ getDiasVida(lote) }}</td>
-                  <td><span class="tag" [class]="'tag-' + lote.etapa_actual.toLowerCase()">{{ lote.etapa_actual }}</span></td>
-                  <td>{{ lote.cantidad_actual | number }}</td>
-                  <td><span class="badge-success">ACTIVO</span></td>
-                </tr>
-              }
-              @empty {
-                <tr><td colspan="6" class="text-center">No hay lotes activos</td></tr>
-              }
-            </tbody>
-          </table>
         </div>
         
-        <div class="card">
-          <div class="card-header">
-            <h2>Acciones Rápidas</h2>
+        <div class="content-grid">
+          <div class="card">
+            <div class="card-header">
+              <h2>Lotes Activos</h2>
+              <a routerLink="/lotes" class="link">Ver todos →</a>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th>Granja/Galpón</th>
+                  <th>Días</th>
+                  <th>Etapa</th>
+                  <th>Pollos</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (lote of lotes.slice(0, 5); track lote.id) {
+                  <tr>
+                    <td><strong>{{ lote.nombre || 'Lote ' + lote.id?.slice(0,4) }}</strong></td>
+                    <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
+                    <td>{{ getDiasVida(lote) }}</td>
+                    <td><span class="tag" [class]="'tag-' + lote.etapa_actual.toLowerCase()">{{ lote.etapa_actual }}</span></td>
+                    <td>{{ lote.cantidad_actual | number }}</td>
+                    <td><span class="badge-success">ACTIVO</span></td>
+                  </tr>
+                }
+                @empty {
+                  <tr><td colspan="6" class="text-center">No hay lotes activos. <a routerLink="/lotes" class="link">Crea uno nuevo →</a></td></tr>
+                }
+              </tbody>
+            </table>
           </div>
-          <div class="quick-actions">
-            <button class="action-btn" routerLink="/lotes/nuevo">➕ Nuevo Lote</button>
-            <button class="action-btn" routerLink="/mortalidad">💔 Registrar Mortalidad</button>
-            <button class="action-btn" routerLink="/consumo">🌽 Registrar Consumo</button>
-            <button class="action-btn" routerLink="/pesajes">⚖️ Nuevo Pesaje</button>
+          
+          <div class="card">
+            <div class="card-header">
+              <h2>Acciones Rápidas</h2>
+            </div>
+            <div class="quick-actions">
+              <button class="action-btn" routerLink="/lotes">➕ Nuevo Lote</button>
+              <button class="action-btn" routerLink="/mortalidad">💔 Registrar Mortalidad</button>
+              <button class="action-btn" routerLink="/consumo">🌽 Registrar Consumo</button>
+              <button class="action-btn" routerLink="/pesajes">⚖️ Nuevo Pesaje</button>
+            </div>
           </div>
         </div>
-      </div>
+      }
     </div>
   `,
   styles: [`
@@ -99,6 +106,11 @@ import { LotService, Lote } from '../../core/services/lot.service';
     .page-header { margin-bottom: 2rem; }
     .page-header h1 { margin: 0; color: #2B2B2B; font-size: 1.75rem; }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
+    .loading-state { text-align: center; padding: 4rem; }
+    .spinner {
+      width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid #FFC107; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .stat-card { background: white; border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .stat-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
@@ -131,15 +143,18 @@ import { LotService, Lote } from '../../core/services/lot.service';
 export class DashboardComponent implements OnInit {
   private lotService = inject(LotService);
   lotes: Lote[] = [];
+  loading = true;
   stats = { lotesActivos: 0, totalPollos: 0, mortalidadPromedio: 0, pesoPromedio: 2500 };
 
   async ngOnInit(): Promise<void> {
     try {
+      this.loading = true;
       this.lotes = await this.lotService.getLotes();
       const activos = this.lotes.filter(l => l.estado === 'ACTIVO');
       this.stats.lotesActivos = activos.length;
       this.stats.totalPollos = activos.reduce((sum, l) => sum + l.cantidad_actual, 0);
     } catch (e) { console.error(e); }
+    finally { this.loading = false; }
   }
 
   getDiasVida(lote: Lote): number {
