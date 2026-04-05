@@ -11,106 +11,76 @@ import { NotificationService, Notification } from '../../core/services/notificat
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   template: `
-    @if (sessionLoading) {
-      <div class="loading-screen">
-        <div class="loading-spinner"></div>
-        <p>Cargando...</p>
-      </div>
-    } @else {
-      <div class="app-container">
-        <header class="topbar">
-          <div class="topbar-left">
-            <button class="menu-toggle" (click)="toggleSidebar()">
-              <span>&#9776;</span>
-            </button>
-            <div class="logo">
-              <span class="logo-icon">🐔</span>
-              <span class="logo-text">EngordeEnOrden</span>
-            </div>
+    <div class="app-container">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-toggle" (click)="toggleSidebar()">
+            <span>&#9776;</span>
+          </button>
+          <div class="logo">
+            <span class="logo-icon">🐔</span>
+            <span class="logo-text">EngordeEnOrden</span>
           </div>
+        </div>
+        
+        <div class="topbar-right">
+          <button class="notification-btn" (click)="showNotifications = !showNotifications">
+            <span>🔔</span>
+            @if (notificationService.unreadCount() > 0) {
+              <span class="badge">{{ notificationService.unreadCount() }}</span>
+            }
+          </button>
           
-          <div class="topbar-right">
-            <button class="notification-btn" (click)="showNotifications = !showNotifications">
-              <span>🔔</span>
-              @if (notificationService.unreadCount() > 0) {
-                <span class="badge">{{ notificationService.unreadCount() }}</span>
+          @if (showNotifications) {
+            <div class="notification-panel">
+              <h4>Notificaciones</h4>
+              @for (n of notificationService.notifications(); track n.id) {
+                <div class="notification-item" [class.unread]="!n.read" (click)="onNotificationClick(n)">
+                  <strong>{{ n.title }}</strong>
+                  <p>{{ n.message }}</p>
+                </div>
               }
-            </button>
-            
-            @if (showNotifications) {
-              <div class="notification-panel">
-                <h4>Notificaciones</h4>
-                @for (n of notificationService.notifications(); track n.id) {
-                  <div class="notification-item" [class.unread]="!n.read" (click)="onNotificationClick(n)">
-                    <strong>{{ n.title }}</strong>
-                    <p>{{ n.message }}</p>
-                  </div>
-                }
-                @if (notificationService.notifications().length === 0) {
-                  <p class="no-notifications">No hay notificaciones</p>
-                }
-              </div>
-            }
-            
-            <div class="user-menu">
-              <span class="user-avatar">A</span>
-              <span class="user-email">{{ authService.user()?.email }}</span>
-              <button class="logout-btn" (click)="logout()">Cerrar</button>
+              @if (notificationService.notifications().length === 0) {
+                <p class="no-notifications">No hay notificaciones</p>
+              }
             </div>
-          </div>
-        </header>
-        
-        <aside class="sidebar" [class.collapsed]="layoutService.collapsed()">
-          <nav class="sidebar-nav">
-            @for (item of layoutService.getMenuItems(); track item.routerLink) {
-              <a [routerLink]="item.routerLink" routerLinkActive="active" class="nav-item">
-                <span class="nav-icon">{{ getIcon(item.label) }}</span>
-                <span class="nav-label">{{ item.label }}</span>
-              </a>
-            }
-          </nav>
+          }
           
-          <div class="sidebar-footer">
-            <span class="brand-icon">🐔</span>
-            @if (!layoutService.collapsed()) {
-              <div class="brand-text">
-                <span class="brand-name">EngordeEnOrden</span>
-                <span class="brand-tagline">Tecnología para crecer mejor</span>
-              </div>
-            }
+          <div class="user-menu">
+            <span class="user-avatar">A</span>
+            <span class="user-email">{{ authService.user()?.email }}</span>
+            <button class="logout-btn" (click)="logout()">Cerrar</button>
           </div>
-        </aside>
+        </div>
+      </header>
+      
+      <aside class="sidebar" [class.collapsed]="layoutService.collapsed()">
+        <nav class="sidebar-nav">
+          @for (item of layoutService.getMenuItems(); track item.routerLink) {
+            <a [routerLink]="item.routerLink" routerLinkActive="active" class="nav-item">
+              <span class="nav-icon">{{ getIcon(item.label) }}</span>
+              <span class="nav-label">{{ item.label }}</span>
+            </a>
+          }
+        </nav>
         
-        <main class="main-content" [class.sidebar-collapsed]="layoutService.collapsed()">
-          <router-outlet></router-outlet>
-        </main>
-      </div>
-    }
+        <div class="sidebar-footer">
+          <span class="brand-icon">🐔</span>
+          @if (!layoutService.collapsed()) {
+            <div class="brand-text">
+              <span class="brand-name">EngordeEnOrden</span>
+              <span class="brand-tagline">Tecnología para crecer mejor</span>
+            </div>
+          }
+        </div>
+      </aside>
+      
+      <main class="main-content" [class.sidebar-collapsed]="layoutService.collapsed()">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   `,
   styles: [`
-    .loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #2B2B2B;
-      color: white;
-    }
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255,255,255,0.2);
-      border-top-color: #FFC107;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 1rem;
-    }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .app-container { min-height: 100vh; }
     .topbar {
       position: fixed;
@@ -229,13 +199,9 @@ export class MainLayoutComponent implements OnInit {
   authService = inject(AuthService);
   notificationService = inject(NotificationService);
   showNotifications = false;
-  sessionLoading = true;
 
   ngOnInit(): void {
-    setTimeout(() => {
-      this.sessionLoading = false;
-      this.notificationService.checkNotifications();
-    }, 500);
+    this.notificationService.checkNotifications();
   }
 
   toggleSidebar(): void {
