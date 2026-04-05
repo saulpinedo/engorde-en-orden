@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { LotService, Lote } from '../../core/services/lot.service';
+import { AuthService } from '../../core/services/auth.service';
+import { OnDestroy } from '@angular/core';
 
 @Component({
   selector: 'app-dashboard',
@@ -13,7 +15,7 @@ import { LotService, Lote } from '../../core/services/lot.service';
         <h1>Dashboard</h1>
         <p class="subtitle">Resumen de tu operación de engorde</p>
       </div>
-      
+
       @if (loading) {
         <div class="loading-state">
           <div class="spinner"></div>
@@ -140,11 +142,27 @@ import { LotService, Lote } from '../../core/services/lot.service';
     @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } }
   `]
 })
-export class DashboardComponent implements OnInit {
+  export class DashboardComponent implements OnInit, OnDestroy {
   private lotService = inject(LotService);
+  private authService = inject(AuthService);
+  private authSub: any;
   lotes: Lote[] = [];
   loading = true;
   stats = { lotesActivos: 0, totalPollos: 0, mortalidadPromedio: 0, pesoPromedio: 2500 };
+
+  private async loadData(): Promise<void> {
+    this.loading = true;
+    try {
+      this.lotes = await this.lotService.getLotes();
+      const activos = this.lotes.filter(l => l.estado === 'ACTIVO');
+      this.stats.lotesActivos = activos.length;
+      this.stats.totalPollos = activos.reduce((sum, l) => sum + l.cantidad_actual, 0);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      this.loading = false;
+    }
+  }
 
   async ngOnInit(): Promise<void> {
     try {
@@ -155,6 +173,15 @@ export class DashboardComponent implements OnInit {
       this.stats.totalPollos = activos.reduce((sum, l) => sum + l.cantidad_actual, 0);
     } catch (e) { console.error(e); }
     finally { this.loading = false; }
+
+    // Suscribirse a cambios globales de autenticación para recargar dashboard al login/logout
+    this.authSub = this.authService.authChange?.subscribe(() => {
+      this.loadData();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.authSub) this.authSub.unsubscribe();
   }
 
   getDiasVida(lote: Lote): number {

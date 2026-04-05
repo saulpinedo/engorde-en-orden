@@ -1,8 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Lote, ConsumoDiario } from '../../core/services/lot.service';
-import { format } from 'date-fns';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-consumo',
@@ -41,10 +41,17 @@ import { format } from 'date-fns';
   `,
   styles: [` .page-container { max-width: 1200px; margin: 0 auto; } .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; } .page-header h1 { margin: 0; color: #2B2B2B; } .subtitle { margin: 0.25rem 0 0 0; color: #666; } .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); } .data-table { width: 100%; border-collapse: collapse; } .data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; } .data-table th { background: #f8f9fa; font-weight: 600; } .tag { padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; } .tag-inicio { background: #d4edda; color: #155724; } .tag-crecimiento { background: #d1ecf1; color: #0c5460; } .tag-engorde { background: #fff3cd; color: #856404; } .text-center { text-align: center; } .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; } .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; } .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; } .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; } .modal h3 { margin: 0 0 1.5rem 0; } .form-group { margin-bottom: 1rem; } .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; } .input-field { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; } .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; } `]
 })
-export class ConsumoComponent implements OnInit {
+export class ConsumoComponent implements OnInit, OnDestroy {
   private lotService = inject(LotService);
+  private authService = inject(AuthService);
+  private authSub: any;
   registros: any[] = []; lotes: Lote[] = []; dialogVisible = false; form: any = { cantidad_kg: 0, etapa: 'INICIO' };
-  async ngOnInit(): Promise<void> { this.lotes = await this.lotService.getLotes(); await this.loadData(); }
+  async ngOnInit(): Promise<void> { 
+    this.lotes = await this.lotService.getLotes(); 
+    await this.loadData();
+    this.authSub = this.authService.authChange?.subscribe(() => this.loadData());
+  }
+  ngOnDestroy(): void { if (this.authSub) this.authSub.unsubscribe(); }
   async loadData(): Promise<void> { const all: any[] = []; for (const l of this.lotes) { const c: any[] = await this.lotService.getConsumos(l.id!); c.forEach(x => x.lote = l); all.push(...c); } this.registros = all.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); }
   onLoteChange(): void { const l = this.lotes.find(x => x.id === this.form.lote_id); if (l) this.form.etapa = l.etapa_actual; }
   getConsumoPorPollo(reg: any): number { return reg.lote ? (reg.cantidad_kg * 1000) / reg.lote.cantidad_actual : 0; }

@@ -1,4 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
+import { Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import type { User, Session } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
@@ -9,6 +10,8 @@ import { SupabaseService } from './supabase.service';
 export class AuthService {
   private supabase = inject(SupabaseService);
   private router = inject(Router);
+  // Emit when authentication state changes (login/logout)
+  public authChange = new Subject<void>();
   
   private userSignal = signal<User | null>(null);
   private sessionSignal = signal<Session | null>(null);
@@ -36,9 +39,11 @@ export class AuthService {
       if (event === 'SIGNED_IN' && session) {
         this.sessionSignal.set(session);
         this.userSignal.set(session.user);
+        this.authChange.next();
       } else if (event === 'SIGNED_OUT') {
         this.sessionSignal.set(null);
         this.userSignal.set(null);
+        this.authChange.next();
       }
     });
   }
@@ -57,6 +62,7 @@ export class AuthService {
       if (data.session) {
         this.sessionSignal.set(data.session);
         this.userSignal.set(data.user);
+        this.authChange.next();
       }
 
       return { success: true };
