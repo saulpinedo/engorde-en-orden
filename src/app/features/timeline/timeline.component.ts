@@ -1,186 +1,387 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LotService, Lote } from '../../core/services/lot.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FullCalendarModule } from '@fullcalendar/angular';
+import { CalendarOptions, EventClickArg, EventInput } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
+import interactionPlugin from '@fullcalendar/interaction';
+import { LotService, Lote, Mortalidad, ConsumoDiario, Pesaje, Vacuna, Hito } from '../../core/services/lot.service';
 import { RefreshService } from '../../core/services/refresh.service';
-import { format } from 'date-fns';
+import { SupabaseService } from '../../core/services/supabase.service';
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 
 @Component({
   selector: 'app-timeline',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FullCalendarModule],
   template: `
     <div class="page-container">
-      @if (lote()) {
+      @if (loading()) {
+        <div class="loading">Cargando calendario...</div>
+      } @else if (!lote()) {
+        <div class="error-state">
+          <h2>Lote no encontrado</h2>
+          <button class="btn-primary" (click)="goBack()">Volver a Lotes</button>
+        </div>
+      } @else {
         <div class="page-header">
-          <div>
-            <h1>Timeline - {{ lote()?.nombre || 'Lote' }}</h1>
-            <p class="subtitle">{{ lote()?.galpon?.granja?.nombre }} / {{ lote()?.galpon?.nombre }}</p>
+          <div class="header-info">
+            <button class="btn-back" (click)="goBack()">←</button>
+            <div>
+              <h1>{{ lote()!.nombre || 'Lote ' + lote()!.id?.slice(0,4) }}</h1>
+              <p class="subtitle">{{ lote()!.galpon?.granja?.nombre }} / {{ lote()!.galpon?.nombre }}</p>
+            </div>
           </div>
           <div class="header-actions">
-            <button class="btn-danger" (click)="openMortalidadDialog()">💔 Mortalidad</button>
-            <button class="btn-success" (click)="openConsumoDialog()">🌽 Consumo</button>
-            <button class="btn-info" (click)="openPesajeDialog()">⚖️ Pesaje</button>
+            <span class="badge" [class]="'badge-' + lote()!.estado.toLowerCase()">{{ lote()!.estado }}</span>
+            <span class="badge badge-etapa">{{ lote()!.etapa_actual }}</span>
           </div>
         </div>
-        
-        <div class="stats-row">
-          <div class="stat"><span class="stat-label">Días</span><span class="stat-value">{{ diasVida() }}</span></div>
-          <div class="stat"><span class="stat-label">Etapa</span><span class="tag" [class]="'tag-' + lote()!.etapa_actual.toLowerCase()">{{ lote()!.etapa_actual }}</span></div>
-          <div class="stat"><span class="stat-label">Pollos</span><span class="stat-value">{{ lote()!.cantidad_actual | number }}</span></div>
-          <div class="stat"><span class="stat-label">Mortalidad</span><span class="stat-value text-danger">{{ mortalidad() }}%</span></div>
-        </div>
-        
-        <div class="card">
-          <h3>Línea de Tiempo</h3>
-          <div class="timeline-scroll">
-            @for (event of timelineEvents(); track event.day) {
-              <div class="timeline-day" [class]="'etapa-' + event.etapa.toLowerCase()" [class.hoy]="isToday(event.date)" [class.pasado]="isPasado(event.date)">
-                <div class="day-header">Día {{ event.day }}<br/><small>{{ formatDate(event.date) }}</small></div>
-                <div class="day-events">
-                  @if (event.tipo === 'mortalidad') { <div class="event-badge mortalidad">💔 {{ event.cantidad }}</div> }
-                  @if (event.tipo === 'consumo') { <div class="event-badge consumo">🌽 {{ event.cantidad }}kg</div> }
-                  @if (event.tipo === 'pesaje') { <div class="event-badge pesaje">⚖️ {{ event.peso }}g</div> }
+
+        <div class="main-layout">
+          <aside class="sidebar">
+            <div class="sidebar-section">
+              <h4>Vista de Etapas</h4>
+              <div class="toggle-group">
+                <button 
+                  class="toggle-btn" 
+                  [class.active]="vistaEtapa() === 'auto'"
+                  (click)="setVistaEtapa('auto')">
+                  🚀 Auto-navegar
+                </button>
+                <button 
+                  class="toggle-btn" 
+                  [class.active]="vistaEtapa() === 'strip'"
+                  (click)="setVistaEtapa('strip')">
+                  📊 Strip
+                </button>
+                <button 
+                  class="toggle-btn" 
+                  [class.active]="vistaEtapa() === 'ninguna'"
+                  (click)="setVistaEtapa('ninguna')">
+                  ❌ Ninguna
+                </button>
+              </div>
+              @if (vistaEtapa() === 'auto') {
+                <p class="helper-text">Navega mes por mes desde inicio del lote</p>
+              }
+              @if (vistaEtapa() === 'strip') {
+                <p class="helper-text">Barra de colores sobre los días</p>
+              }
+            </div>
+
+            <div class="sidebar-section">
+              <h4>Filtros</h4>
+              <label class="filter-item">
+                <input type="checkbox" [(ngModel)]="showMortalidad" (change)="updateFilters()"/>
+                <span class="filter-dot dot-mortalidad"></span>
+                Mortalidad
+              </label>
+              <label class="filter-item">
+                <input type="checkbox" [(ngModel)]="showConsumo" (change)="updateFilters()"/>
+                <span class="filter-dot dot-consumo"></span>
+                Consumo
+              </label>
+              <label class="filter-item">
+                <input type="checkbox" [(ngModel)]="showPesaje" (change)="updateFilters()"/>
+                <span class="filter-dot dot-pesaje"></span>
+                Pesaje
+              </label>
+              <label class="filter-item">
+                <input type="checkbox" [(ngModel)]="showVacuna" (change)="updateFilters()"/>
+                <span class="filter-dot dot-vacuna"></span>
+                Vacunas
+              </label>
+            </div>
+
+            <div class="sidebar-section">
+              <h4>Etapas</h4>
+              <div class="etapa-indicator inicio">
+                <span class="etapa-color"></span>
+                <span>Inicio (Días 1-10)</span>
+              </div>
+              <div class="etapa-indicator crecimiento">
+                <span class="etapa-color"></span>
+                <span>Crecimiento (Días 11-25)</span>
+              </div>
+              <div class="etapa-indicator engorde">
+                <span class="etapa-color"></span>
+                <span>Engorde (Días 26-45)</span>
+              </div>
+            </div>
+
+            @if (vistaEtapa() === 'auto') {
+              <div class="sidebar-section">
+                <h4>Ir a Mes</h4>
+                <button class="btn-nav" (click)="navigateToMonth('prev')">◀ Mes Anterior</button>
+                <button class="btn-nav" (click)="navigateToMonth('today')">📍 Hoy</button>
+                <button class="btn-nav" (click)="navigateToMonth('next')">Mes Siguiente ▶</button>
+                <div class="mes-info">
+                  <small>Día {{ diasVida() }} de 45</small>
                 </div>
               </div>
             }
-          </div>
-          <div class="timeline-legend">
-            <span class="legend-item"><span class="legend-color inicio"></span> Inicio (1-10)</span>
-            <span class="legend-item"><span class="legend-color crecimiento"></span> Crecimiento (11-25)</span>
-            <span class="legend-item"><span class="legend-color engorde"></span> Engorde (26+)</span>
-          </div>
-        </div>
-      } @else {
-        <div class="loading">Cargando...</div>
-      }
-      
-      @if (mortalidadDialogVisible()) {
-        <div class="modal-overlay" (click)="mortalidadDialogVisible.set(false)">
-          <div class="modal" (click)="$event.stopPropagation()">
-            <h3>Registrar Mortalidad</h3>
-            <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="mortalidadForm.fecha" class="input-field"/></div>
-            <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="mortalidadForm.cantidad" min="1" class="input-field"/></div>
-            <div class="form-group"><label>Causa</label><input type="text" [(ngModel)]="mortalidadForm.causa" placeholder="Opcional" class="input-field"/></div>
-            <div class="modal-actions">
-              <button class="btn-secondary" (click)="mortalidadDialogVisible.set(false)">Cancelar</button>
-              <button class="btn-primary" (click)="saveMortalidad()">Guardar</button>
+          </aside>
+
+          <main class="content">
+            @if (vistaEtapa() === 'strip') {
+              <div class="etapas-strip">
+                @for (day of getDiasEtapas(); track day.date) {
+                  <div 
+                    class="etapa-day" 
+                    [class]="'etapa-day-' + day.etapa.toLowerCase()"
+                    [title]="day.etapa + ' - Día ' + day.dayNumber">
+                    <span class="day-num">{{ day.dayNumber }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="stats-row">
+              <div class="stat">
+                <span class="stat-label">Día</span>
+                <span class="stat-value">{{ diasVida() }}</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Pollos Actuales</span>
+                <span class="stat-value">{{ lote()!.cantidad_actual | number }}</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Mortalidad</span>
+                <span class="stat-value text-danger">{{ mortalidad() }}%</span>
+              </div>
+              <div class="stat">
+                <span class="stat-label">Ingreso Pollitos</span>
+                <span class="stat-value">{{ lote()!.cantidad_inicial | number }}</span>
+              </div>
             </div>
-          </div>
+
+            <div class="calendar-card">
+              <full-calendar [options]="calendarOptions"></full-calendar>
+            </div>
+          </main>
         </div>
       }
-      
-      @if (consumoDialogVisible()) {
-        <div class="modal-overlay" (click)="consumoDialogVisible.set(false)">
+
+      @if (modalVisible()) {
+        <div class="modal-overlay" (click)="closeModal()">
           <div class="modal" (click)="$event.stopPropagation()">
-            <h3>Registrar Consumo</h3>
-            <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="consumoForm.fecha" class="input-field"/></div>
-            <div class="form-group"><label>Cantidad (kg)</label><input type="number" [(ngModel)]="consumoForm.cantidad_kg" step="0.5" class="input-field"/></div>
-            <div class="modal-actions">
-              <button class="btn-secondary" (click)="consumoDialogVisible.set(false)">Cancelar</button>
-              <button class="btn-primary" (click)="saveConsumo()">Guardar</button>
-            </div>
-          </div>
-        </div>
-      }
-      
-      @if (pesajeDialogVisible()) {
-        <div class="modal-overlay" (click)="pesajeDialogVisible.set(false)">
-          <div class="modal" (click)="$event.stopPropagation()">
-            <h3>Registrar Pesaje</h3>
-            <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="pesajeForm.fecha" class="input-field"/></div>
-            <div class="form-group"><label>Peso Promedio (g)</label><input type="number" [(ngModel)]="pesajeForm.peso_promedio" step="10" class="input-field"/></div>
-            <div class="form-group"><label>Muestra</label><input type="number" [(ngModel)]="pesajeForm.muestra" min="1" class="input-field"/></div>
-            <div class="modal-actions">
-              <button class="btn-secondary" (click)="pesajeDialogVisible.set(false)">Cancelar</button>
-              <button class="btn-primary" (click)="savePesaje()">Guardar</button>
-            </div>
+            <h3>{{ getModalTitle() }}</h3>
+            
+            @if (modalMode() === 'select') {
+              <div class="event-types">
+                <button class="event-type-btn" (click)="setModalMode('mortalidad')">
+                  <span class="icon">💔</span>
+                  <span>Mortalidad</span>
+                </button>
+                <button class="event-type-btn" (click)="setModalMode('consumo')">
+                  <span class="icon">🌽</span>
+                  <span>Consumo</span>
+                </button>
+                <button class="event-type-btn" (click)="setModalMode('pesaje')">
+                  <span class="icon">⚖️</span>
+                  <span>Pesaje</span>
+                </button>
+                <button class="event-type-btn" (click)="setModalMode('vacuna')">
+                  <span class="icon">💉</span>
+                  <span>Vacuna</span>
+                </button>
+              </div>
+            } @else {
+              <div class="form-grid">
+                @if (modalMode() === 'mortalidad') {
+                  <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
+                  <div class="form-group"><label>Cantidad de pollos</label><input type="number" [(ngModel)]="form.cantidad" min="1" class="input-field"/></div>
+                  <div class="form-group"><label>Causa (opcional)</label><input type="text" [(ngModel)]="form.causa" placeholder="Ej: Disease..." class="input-field"/></div>
+                }
+                @if (modalMode() === 'consumo') {
+                  <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
+                  <div class="form-group"><label>Cantidad (kg)</label><input type="number" [(ngModel)]="form.cantidad_kg" step="0.5" min="0" class="input-field"/></div>
+                  <div class="info-box"><span class="info-icon">ℹ️</span><span>Durará {{ calcularDiasDuracion() }} días ({{ getConsumoPorPollo() }}g/pollo/día)</span></div>
+                }
+                @if (modalMode() === 'pesaje') {
+                  <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
+                  <div class="form-group"><label>Peso Promedio (g)</label><input type="number" [(ngModel)]="form.peso_promedio" step="10" class="input-field"/></div>
+                  <div class="form-group"><label>Muestra</label><input type="number" [(ngModel)]="form.muestra" min="1" class="input-field"/></div>
+                }
+                @if (modalMode() === 'vacuna') {
+                  <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
+                  <div class="form-group"><label>Vacuna</label><select [(ngModel)]="form.vacuna_id" class="input-field"><option value="">Seleccionar</option>@for (v of vacunas(); track v.id) { <option [value]="v.id">{{ v.nombre }}</option> }</select></div>
+                  <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
+                }
+              </div>
+              <div class="modal-actions">
+                @if (isEditing()) { <button class="btn-danger" (click)="deleteEvent()">🗑️</button> }
+                @if (!isEditing()) { <button class="btn-secondary" (click)="setModalMode('select')">←</button> }
+                <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
+                <button class="btn-primary" (click)="saveEvent()">{{ isEditing() ? 'Actualizar' : 'Guardar' }}</button>
+              </div>
+            }
           </div>
         </div>
       }
     </div>
   `,
   styles: [`
-    .page-container { max-width: 1400px; margin: 0 auto; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .page-container { max-width: 100%; margin: 0 auto; padding: 1rem; }
+    .loading, .error-state { text-align: center; padding: 4rem; color: #666; }
+    .error-state h2 { margin-bottom: 1rem; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+    .header-info { display: flex; align-items: center; gap: 1rem; }
+    .btn-back { background: #e9ecef; border: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 1.25rem; }
+    .btn-back:hover { background: #FFC107; }
     .page-header h1 { margin: 0; color: #2B2B2B; }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
-    .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
-    .stat { background: white; padding: 1rem; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .stat-label { display: block; font-size: 0.75rem; color: #666; }
+    .header-actions { display: flex; gap: 0.5rem; }
+    .badge { padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600; }
+    .badge-activo { background: #d4edda; color: #155724; }
+    .badge-finalizado { background: #fff3cd; color: #856404; }
+    .badge-etapa { background: #e9ecef; color: #2B2B2B; }
+    
+    .main-layout { display: flex; gap: 1rem; }
+    .sidebar { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1rem; }
+    .sidebar-section { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .sidebar-section h4 { margin: 0 0 0.75rem 0; font-size: 0.875rem; color: #2B2B2B; text-transform: uppercase; letter-spacing: 0.5px; }
+    .toggle-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .toggle-btn { padding: 0.5rem; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
+    .toggle-btn:hover { border-color: #FFC107; }
+    .toggle-btn.active { background: #FFC107; color: #2B2B2B; border-color: #FFC107; font-weight: 600; }
+    .helper-text { font-size: 0.75rem; color: #666; margin: 0.5rem 0 0 0; }
+    
+    .filter-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer; font-size: 0.875rem; }
+    .filter-item input { cursor: pointer; }
+    .filter-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-mortalidad { background: #D32F2F; }
+    .dot-consumo { background: #28a745; }
+    .dot-pesaje { background: #17a2b8; }
+    .dot-vacuna { background: #6f42c1; }
+    
+    .etapa-indicator { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; font-size: 0.8rem; }
+    .etapa-color { width: 16px; height: 16px; border-radius: 4px; }
+    .etapa-indicator.inicio .etapa-color { background: #FFC107; }
+    .etapa-indicator.crecimiento .etapa-color { background: #FF9800; }
+    .etapa-indicator.engorde .etapa-color { background: #D32F2F; }
+    
+    .btn-nav { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    .btn-nav:hover { background: #FFC107; border-color: #FFC107; }
+    .mes-info { text-align: center; margin-top: 0.5rem; color: #666; }
+    
+    .content { flex: 1; min-width: 0; }
+    .etapas-strip { display: flex; overflow-x: auto; padding: 0.5rem; background: white; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .etapa-day { min-width: 20px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; border-radius: 3px; margin-right: 2px; color: white; font-weight: 600; cursor: pointer; }
+    .etapa-day:hover { transform: scale(1.2); }
+    .etapa-day-inicio { background: #FFC107; color: #856404; }
+    .etapa-day-crecimiento { background: #FF9800; }
+    .etapa-day-engorde { background: #D32F2F; }
+    .day-num { line-height: 1; }
+    
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem; }
+    .stat { background: white; padding: 1rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .stat-label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 0.25rem; }
     .stat-value { font-size: 1.5rem; font-weight: 700; }
     .text-danger { color: #d32f2f; }
-    .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
-    .card h3 { margin: 0 0 1rem 0; }
-    .timeline-scroll { display: flex; gap: 0.75rem; overflow-x: auto; padding: 0.5rem 0; }
-    .timeline-day { min-width: 100px; border-radius: 8px; padding: 0.75rem; border: 2px solid; }
-    .timeline-day.etapa-inicio { background: rgba(40,167,69,0.1); border-color: #28a745; }
-    .timeline-day.etapa-crecimiento { background: rgba(23,162,184,0.1); border-color: #17a2b8; }
-    .timeline-day.etapa-engorde { background: rgba(255,193,7,0.1); border-color: #FFC107; }
-    .timeline-day.hoy { box-shadow: 0 0 0 3px #2B2B2B; }
-    .timeline-day.pasado { opacity: 0.7; }
-    .day-header { text-align: center; font-weight: 700; font-size: 0.875rem; margin-bottom: 0.5rem; }
-    .day-header small { font-weight: normal; color: #666; }
-    .day-events { display: flex; flex-direction: column; gap: 0.25rem; }
-    .event-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; text-align: center; }
-    .event-badge.mortalidad { background: #f8d7da; color: #721c24; }
-    .event-badge.consumo { background: #d4edda; color: #155724; }
-    .event-badge.pesaje { background: #d1ecf1; color: #0c5460; }
-    .timeline-legend { display: flex; gap: 1.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; }
-    .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
-    .legend-color { width: 16px; height: 16px; border-radius: 4px; }
-    .legend-color.inicio { background: #28a745; }
-    .legend-color.crecimiento { background: #17a2b8; }
-    .legend-color.engorde { background: #FFC107; }
-    .tag { padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 600; display: inline-block; }
-    .tag-inicio { background: #d4edda; color: #155724; }
-    .tag-crecimiento { background: #d1ecf1; color: #0c5460; }
-    .tag-engorde { background: #fff3cd; color: #856404; }
-    .loading { text-align: center; padding: 3rem; color: #666; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
-    .btn-danger { background: #f8d7da; color: #D32F2F; border: none; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; }
-    .btn-success { background: #d4edda; color: #28a745; border: none; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; }
-    .btn-info { background: #d1ecf1; color: #17a2b8; border: none; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; }
+    
+    .calendar-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-    .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; }
-    .modal h3 { margin: 0 0 1.5rem 0; }
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+    .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { margin: 0 0 1.5rem 0; color: #2B2B2B; text-align: center; }
+    .event-types { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .event-type-btn { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1.5rem; background: #f8f9fa; border: 2px solid transparent; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+    .event-type-btn:hover { border-color: #FFC107; }
+    .event-type-btn .icon { font-size: 2rem; }
+    .form-grid { display: flex; flex-direction: column; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-weight: 500; margin-bottom: 0.5rem; font-size: 0.875rem; }
     .input-field { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
     .input-field:focus { outline: none; border-color: #FFC107; }
-    .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .info-box { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #e7f3ff; border-radius: 8px; font-size: 0.875rem; color: #004085; }
+    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
+    .btn-danger { background: #f8d7da; color: #D32F2F; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
+    
+    @media (max-width: 1024px) { .main-layout { flex-direction: column; } .sidebar { width: 100%; } .stats-row { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+    
+    :host ::ng-deep .fc { font-family: inherit; }
+    :host ::ng-deep .fc-toolbar-title { font-size: 1.25rem; color: #2B2B2B; }
+    :host ::ng-deep .fc-button-primary { background-color: #FFC107 !important; border-color: #FFC107 !important; color: #2B2B2B !important; }
+    :host ::ng-deep .fc-button-primary:hover { background-color: #e0a800 !important; }
+    :host ::ng-deep .fc-day-today { background: rgba(255,193,7,0.15) !important; }
+    :host ::ng-deep .fc-event { cursor: pointer; padding: 2px 4px; font-size: 0.75rem; }
+    :host ::ng-deep .fc-daygrid-event { padding: 2px 6px; }
   `]
 })
 export class TimelineComponent implements OnInit, OnDestroy {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private lotService = inject(LotService);
-  private refresh = inject(RefreshService);
+  private refreshService = inject(RefreshService);
+  private supabase = inject(SupabaseService);
   private refreshSub: any;
 
   lote = signal<Lote | null>(null);
+  loading = signal(true);
   diasVida = signal(0);
   mortalidad = signal(0);
-  timelineEvents = signal<any[]>([]);
+  vacunas = signal<Vacuna[]>([]);
   
-  mortalidadDialogVisible = signal(false);
-  mortalidadForm: any = { cantidad: 1 };
+  vistaEtapa = signal<'auto' | 'strip' | 'ninguna'>('strip');
+  currentViewDate = signal<Date>(new Date());
   
-  consumoDialogVisible = signal(false);
-  consumoForm: any = { cantidad_kg: 0 };
+  showMortalidad = true;
+  showConsumo = true;
+  showPesaje = true;
+  showVacuna = true;
   
-  pesajeDialogVisible = signal(false);
-  pesajeForm: any = { muestra: 10 };
+  modalVisible = signal(false);
+  modalMode = signal<'select' | 'mortalidad' | 'consumo' | 'pesaje' | 'vacuna'>('select');
+  selectedDate = signal<Date | null>(null);
+  form: any = {};
+  isEditing = signal(false);
+  editingEventId = signal<string | null>(null);
+  editingEventType = signal<string | null>(null);
 
-  today = new Date();
+  mortalidadesCache: Mortalidad[] = [];
+  consumosCache: ConsumoDiario[] = [];
+  pesajesCache: Pesaje[] = [];
+  hitosCache: Hito[] = [];
+
+  calendarOptions: CalendarOptions = {
+    plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,dayGridWeek,listWeek'
+    },
+    height: 'auto',
+    selectable: true,
+    editable: false,
+    dateClick: this.handleDateClick.bind(this),
+    eventClick: this.handleEventClick.bind(this),
+    dayMaxEvents: 5,
+    nowIndicator: true,
+    events: []
+  };
 
   async ngOnInit(): Promise<void> {
-    const lotes = await this.lotService.getLotes();
-    const activo = lotes.find(l => l.estado === 'ACTIVO');
-    if (activo) await this.loadLote(activo.id!);
-    this.refreshSub = this.refresh.refresh$.subscribe(() => {
-      if (this.lote()) this.loadLote(this.lote()!.id!);
+    const loteId = this.route.snapshot.paramMap.get('id');
+    console.log('Timeline init, loteId:', loteId);
+    
+    if (loteId) {
+      await this.loadLote(loteId);
+    } else {
+      console.error('No loteId found in route params');
+      this.loading.set(false);
+    }
+    
+    this.refreshSub = this.refreshService.refresh$.subscribe(() => {
+      if (loteId) this.loadLote(loteId);
     });
   }
 
@@ -189,67 +390,370 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
 
   async loadLote(id: string): Promise<void> {
-    const loteData = await this.lotService.getLote(id);
-    if (loteData) {
-      this.lote.set(loteData);
-      this.diasVida.set(this.lotService.getDiasVida(loteData.fecha_inicio));
-      this.mortalidad.set(Math.round((1 - loteData.cantidad_actual / loteData.cantidad_inicial) * 100 * 10) / 10);
-      await this.buildTimeline();
+    this.loading.set(true);
+    try {
+      console.log('Loading lote:', id);
+      const [loteData, vacunasData] = await Promise.all([
+        this.lotService.getLote(id),
+        this.lotService.getVacunas()
+      ]);
+      
+      console.log('Lote data:', loteData);
+      
+      if (loteData) {
+        this.lote.set(loteData);
+        this.diasVida.set(this.lotService.getDiasVida(loteData.fecha_inicio));
+        this.mortalidad.set(Math.round((1 - loteData.cantidad_actual / loteData.cantidad_inicial) * 100 * 10) / 10);
+        
+        const startDate = new Date(loteData.fecha_inicio);
+        const initialViewDate = addDays(startDate, Math.max(0, this.diasVida() - 14));
+        this.currentViewDate.set(initialViewDate);
+        
+        const events = await this.buildEvents(loteData);
+        
+        this.calendarOptions = {
+          ...this.calendarOptions,
+          initialDate: initialViewDate,
+          events
+        };
+        
+        this.vacunas.set(vacunasData);
+      } else {
+        console.warn('No loteData returned for id:', id);
+      }
+    } catch (e: any) {
+      console.error('Error loading lote:', e);
+    } finally {
+      this.loading.set(false);
     }
   }
 
-  async buildTimeline(): Promise<void> {
-    const currentLote = this.lote();
-    if (!currentLote) return;
-    const [mortalidades, consumos, pesajes] = await Promise.all([
-      this.lotService.getMortalidades(currentLote.id!),
-      this.lotService.getConsumos(currentLote.id!),
-      this.lotService.getPesajes(currentLote.id!)
-    ]);
+  async buildEvents(lote: Lote): Promise<EventInput[]> {
+    const events: EventInput[] = [];
     
-    const events: any[] = [];
-    const days = Math.min(this.diasVida(), 45);
-    for (let i = 0; i < days; i++) {
-      const date = new Date(currentLote.fecha_inicio);
-      date.setDate(date.getDate() + i);
-      const etapa = this.lotService.getEtapaActual(i + 1);
-      const mort = mortalidades.find(m => m.fecha === format(date, 'yyyy-MM-dd'));
-      const cons = consumos.find(c => c.fecha === format(date, 'yyyy-MM-dd'));
-      const pes = pesajes.find(p => p.fecha === format(date, 'yyyy-MM-dd'));
-      events.push({ date, day: i + 1, etapa, ...(mort && { tipo: 'mortalidad', cantidad: mort.cantidad }), ...(cons && { tipo: 'consumo', cantidad: cons.cantidad_kg }), ...(pes && { tipo: 'pesaje', peso: pes.peso_promedio }) });
+    this.mortalidadesCache = await this.lotService.getMortalidades(lote.id!);
+    this.consumosCache = await this.lotService.getConsumos(lote.id!);
+    this.pesajesCache = await this.lotService.getPesajes(lote.id!);
+    this.hitosCache = await this.lotService.getHitos(lote.id!);
+    
+    if (this.showMortalidad) {
+      this.mortalidadesCache.forEach(m => {
+        events.push({
+          id: `m-${m.id}`,
+          title: `💔 ${m.cantidad}`,
+          start: m.fecha,
+          backgroundColor: '#D32F2F',
+          borderColor: '#D32F2F',
+          extendedProps: { tipo: 'mortalidad', cantidad: m.cantidad, causa: m.causa, originalId: m.id }
+        });
+      });
     }
-    this.timelineEvents.set(events);
+    
+    if (this.showConsumo) {
+      this.consumosCache.forEach(c => {
+        const diasDuracion = this.calcularDiasConsumo(c.cantidad_kg, lote);
+        events.push({
+          id: `c-${c.id}`,
+          title: `🌽 ${c.cantidad_kg}kg (~${diasDuracion}d)`,
+          start: c.fecha,
+          end: format(addDays(new Date(c.fecha), diasDuracion), 'yyyy-MM-dd'),
+          backgroundColor: '#28a745',
+          borderColor: '#28a745',
+          extendedProps: { tipo: 'consumo', cantidad: c.cantidad_kg, originalId: c.id }
+        });
+      });
+    }
+    
+    if (this.showPesaje) {
+      this.pesajesCache.forEach(p => {
+        events.push({
+          id: `p-${p.id}`,
+          title: `⚖️ ${p.peso_promedio}g`,
+          start: p.fecha,
+          backgroundColor: '#17a2b8',
+          borderColor: '#17a2b8',
+          extendedProps: { tipo: 'pesaje', peso: p.peso_promedio, muestra: p.muestra, originalId: p.id }
+        });
+      });
+    }
+    
+    if (this.showVacuna) {
+      this.hitosCache.filter(h => h.tipo === 'VACUNA').forEach(h => {
+        events.push({
+          id: `v-${h.id}`,
+          title: `💉 ${h.titulo}`,
+          start: h.fecha,
+          backgroundColor: '#6f42c1',
+          borderColor: '#6f42c1',
+          extendedProps: { tipo: 'vacuna', titulo: h.titulo, notas: h.observaciones, originalId: h.id }
+        });
+      });
+    }
+    
+    if (this.vistaEtapa() === 'auto') {
+      const etapaChanges = this.getEtapaChangeEvents(lote);
+      events.push(...etapaChanges);
+    }
+    
+    return events;
   }
 
-  isToday(date: Date): boolean { return date.toDateString() === this.today.toDateString(); }
-  isPasado(date: Date): boolean { return date < this.today && !this.isToday(date); }
-  formatDate(date: Date): string { return format(date, 'dd/MM'); }
-
-  openMortalidadDialog(): void { this.mortalidadForm = { cantidad: 1 }; this.mortalidadDialogVisible.set(true); }
-  openConsumoDialog(): void { this.consumoForm = { cantidad_kg: 0 }; this.consumoDialogVisible.set(true); }
-  openPesajeDialog(): void { this.pesajeForm = { muestra: 10 }; this.pesajeDialogVisible.set(true); }
-
-  async saveMortalidad(): Promise<void> {
-    const currentLote = this.lote();
-    if (!currentLote) return;
-    await this.lotService.createMortalidad({ ...this.mortalidadForm, lote_id: currentLote.id!, fecha: this.mortalidadForm.fecha } as any);
-    this.mortalidadDialogVisible.set(false);
-    await this.loadLote(currentLote.id!);
+  getEtapaChangeEvents(lote: Lote): EventInput[] {
+    const events: EventInput[] = [];
+    const startDate = new Date(lote.fecha_inicio);
+    
+    const etapas = [
+      { nombre: 'INICIO', dias: [0, 10], color: '#FFC107', textColor: '#856404' },
+      { nombre: 'CRECIMIENTO', dias: [11, 25], color: '#FF9800', textColor: '#ffffff' },
+      { nombre: 'ENGORDE', dias: [26, 45], color: '#D32F2F', textColor: '#ffffff' }
+    ];
+    
+    etapas.forEach(etapa => {
+      const etapaStart = addDays(startDate, etapa.dias[0]);
+      const etapaEnd = addDays(startDate, etapa.dias[1] + 1);
+      
+      events.push({
+        id: `etapa-${etapa.nombre}`,
+        title: etapa.nombre,
+        start: etapaStart,
+        end: etapaEnd,
+        display: 'background',
+        backgroundColor: etapa.color,
+        textColor: etapa.textColor,
+        classNames: [`etapa-bg-${etapa.nombre.toLowerCase()}`]
+      });
+    });
+    
+    return events;
   }
 
-  async saveConsumo(): Promise<void> {
+  getDiasEtapas(): { date: string; etapa: string; dayNumber: number }[] {
     const currentLote = this.lote();
-    if (!currentLote) return;
-    await this.lotService.createConsumo({ ...this.consumoForm, lote_id: currentLote.id!, fecha: this.consumoForm.fecha, etapa: currentLote.etapa_actual } as any);
-    this.consumoDialogVisible.set(false);
-    await this.loadLote(currentLote.id!);
+    if (!currentLote) return [];
+    
+    const startDate = new Date(currentLote.fecha_inicio);
+    const diasTotales = 45;
+    const days: { date: string; etapa: string; dayNumber: number }[] = [];
+    
+    for (let i = 0; i < diasTotales; i++) {
+      const date = addDays(startDate, i);
+      let etapa = 'ENGORDE';
+      if (i < 10) etapa = 'INICIO';
+      else if (i < 25) etapa = 'CRECIMIENTO';
+      
+      days.push({
+        date: format(date, 'yyyy-MM-dd'),
+        etapa,
+        dayNumber: i + 1
+      });
+    }
+    
+    return days;
   }
 
-  async savePesaje(): Promise<void> {
+  setVistaEtapa(vista: 'auto' | 'strip' | 'ninguna'): void {
+    this.vistaEtapa.set(vista);
+    this.reloadEvents();
+  }
+
+  updateFilters(): void {
+    this.reloadEvents();
+  }
+
+  async reloadEvents(): Promise<void> {
     const currentLote = this.lote();
     if (!currentLote) return;
-    await this.lotService.createPesaje({ ...this.pesajeForm, lote_id: currentLote.id!, fecha: this.pesajeForm.fecha } as any);
-    this.pesajeDialogVisible.set(false);
-    await this.loadLote(currentLote.id!);
+    
+    const events = await this.buildEvents(currentLote);
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      events
+    };
+  }
+
+  navigateToMonth(direction: 'prev' | 'next' | 'today'): void {
+    const currentDate = this.currentViewDate();
+    let newDate: Date;
+    
+    if (direction === 'today') {
+      newDate = new Date();
+    } else if (direction === 'prev') {
+      newDate = addDays(startOfMonth(currentDate), -1);
+    } else {
+      newDate = addDays(endOfMonth(currentDate), 1);
+    }
+    
+    this.currentViewDate.set(newDate);
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      initialDate: newDate
+    };
+  }
+
+  calcularDiasConsumo(kg: number, lote: Lote): number {
+    const etapa = lote.etapa_actual;
+    const consumoDiarioGramos = this.getConsumoDiarioCobb(etapa);
+    const totalPollos = lote.cantidad_actual;
+    return Math.max(1, Math.round((kg * 1000) / (consumoDiarioGramos * totalPollos)));
+  }
+
+  calcularDiasDuracion(): number {
+    const currentLote = this.lote();
+    if (!currentLote || !this.form.cantidad_kg) return 0;
+    return this.calcularDiasConsumo(this.form.cantidad_kg, currentLote);
+  }
+
+  getConsumoPorPollo(): number {
+    const currentLote = this.lote();
+    if (!currentLote) return 0;
+    return Math.round(this.getConsumoDiarioCobb(currentLote.etapa_actual) * 1000);
+  }
+
+  getConsumoDiarioCobb(etapa: string): number {
+    switch (etapa) {
+      case 'INICIO': return 0.033;
+      case 'CRECIMIENTO': return 0.095;
+      case 'ENGORDE': return 0.160;
+      default: return 0.100;
+    }
+  }
+
+  handleDateClick(arg: any): void {
+    this.selectedDate.set(arg.date);
+    this.isEditing.set(false);
+    this.editingEventId.set(null);
+    this.modalMode.set('select');
+    this.form = {};
+    this.modalVisible.set(true);
+  }
+
+  handleEventClick(arg: EventClickArg): void {
+    const event = arg.event;
+    const props = event.extendedProps as any;
+    const tipo = props.tipo;
+    
+    if (!tipo) return;
+    
+    this.selectedDate.set(event.start);
+    this.editingEventId.set(props.originalId);
+    this.editingEventType.set(tipo);
+    this.isEditing.set(true);
+    this.modalMode.set(tipo);
+    
+    switch (tipo) {
+      case 'mortalidad':
+        this.form = { fecha: event.startStr, cantidad: props.cantidad, causa: props.causa || '' };
+        break;
+      case 'consumo':
+        this.form = { fecha: event.startStr, cantidad_kg: props.cantidad };
+        break;
+      case 'pesaje':
+        this.form = { fecha: event.startStr, peso_promedio: props.peso, muestra: props.muestra || 10 };
+        break;
+      case 'vacuna':
+        const vacuna = this.vacunas().find(v => v.nombre === props.titulo);
+        this.form = { fecha: event.startStr, vacuna_id: vacuna?.id || '', notas: props.notas || '' };
+        break;
+    }
+    
+    this.modalVisible.set(true);
+  }
+
+  getModalTitle(): string {
+    const date = this.selectedDate();
+    const dateStr = date ? format(date, 'dd/MM/yyyy') : '';
+    const prefix = this.isEditing() ? 'Editar ' : '';
+    switch (this.modalMode()) {
+      case 'mortalidad': return `${prefix}💔 Mortalidad - ${dateStr}`;
+      case 'consumo': return `${prefix}🌽 Consumo - ${dateStr}`;
+      case 'pesaje': return `${prefix}⚖️ Pesaje - ${dateStr}`;
+      case 'vacuna': return `${prefix}💉 Vacuna - ${dateStr}`;
+      default: return this.isEditing() ? 'Editar Evento' : 'Registrar Evento';
+    }
+  }
+
+  setModalMode(mode: 'select' | 'mortalidad' | 'consumo' | 'pesaje' | 'vacuna'): void {
+    this.modalMode.set(mode);
+    if (mode === 'mortalidad') this.form = { cantidad: 1, causa: '' };
+    if (mode === 'consumo') this.form = { cantidad_kg: 0 };
+    if (mode === 'pesaje') this.form = { muestra: 10 };
+    if (mode === 'vacuna') this.form = { notas: '' };
+  }
+
+  closeModal(): void {
+    this.modalVisible.set(false);
+    this.modalMode.set('select');
+    this.isEditing.set(false);
+    this.editingEventId.set(null);
+    this.editingEventType.set(null);
+  }
+
+  async saveEvent(): Promise<void> {
+    const currentLote = this.lote();
+    if (!currentLote) return;
+    const fecha = this.form.fecha;
+    const editingId = this.editingEventId();
+
+    try {
+      switch (this.modalMode()) {
+        case 'mortalidad':
+          if (!this.form.cantidad || this.form.cantidad < 1) { alert('Cantidad inválida'); return; }
+          if (editingId) { await this.supabaseUpdate('mortalidades', editingId, { fecha, cantidad: this.form.cantidad, causa: this.form.causa }); }
+          else { await this.lotService.createMortalidad({ lote_id: currentLote.id!, fecha, cantidad: this.form.cantidad, causa: this.form.causa }); }
+          break;
+        case 'consumo':
+          if (!this.form.cantidad_kg || this.form.cantidad_kg <= 0) { alert('Cantidad inválida'); return; }
+          if (editingId) { await this.supabaseUpdate('consumo_diario', editingId, { fecha, cantidad_kg: this.form.cantidad_kg, etapa: currentLote.etapa_actual }); }
+          else { await this.lotService.createConsumo({ lote_id: currentLote.id!, fecha, cantidad_kg: this.form.cantidad_kg, etapa: currentLote.etapa_actual }); }
+          break;
+        case 'pesaje':
+          if (!this.form.peso_promedio || this.form.peso_promedio <= 0) { alert('Peso inválido'); return; }
+          if (editingId) { await this.supabaseUpdate('pesajes', editingId, { fecha, peso_promedio: this.form.peso_promedio, muestra: this.form.muestra || 10 }); }
+          else { await this.lotService.createPesaje({ lote_id: currentLote.id!, fecha, peso_promedio: this.form.peso_promedio, muestra: this.form.muestra || 10 }); }
+          break;
+        case 'vacuna':
+          if (!this.form.vacuna_id) { alert('Selecciona una vacuna'); return; }
+          const vacuna = this.vacunas().find(v => v.id === this.form.vacuna_id);
+          if (editingId) { await this.supabaseUpdate('hitos', editingId, { fecha, observaciones: this.form.notas }); }
+          else { await this.lotService.createHito({ lote_id: currentLote.id!, tipo: 'VACUNA', titulo: vacuna?.nombre || 'Vacuna', fecha, estado: 'COMPLETADO', observaciones: this.form.notas }); }
+          break;
+      }
+      
+      this.closeModal();
+      await this.loadLote(currentLote.id!);
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  async deleteEvent(): Promise<void> {
+    const editingId = this.editingEventId();
+    const tipo = this.editingEventType();
+    if (!editingId || !tipo) return;
+    if (!confirm('¿Eliminar este registro?')) return;
+
+    try {
+      const tableMap: any = { mortalidad: 'mortalidades', consumo: 'consumo_diario', pesaje: 'pesajes', vacuna: 'hitos' };
+      await this.supabaseDelete(tableMap[tipo], editingId);
+      this.closeModal();
+      const currentLote = this.lote();
+      if (currentLote) await this.loadLote(currentLote.id!);
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  private async supabaseDelete(table: string, id: string): Promise<void> {
+    const { error } = await this.supabase.client.from(table).delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  private async supabaseUpdate(table: string, id: string, data: any): Promise<void> {
+    const { error } = await this.supabase.client.from(table).update(data).eq('id', id);
+    if (error) throw error;
+  }
+
+  goBack(): void {
+    this.router.navigate(['/lotes']);
   }
 }

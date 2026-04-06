@@ -173,9 +173,10 @@ export class LotService {
   }
 
   async getLote(id: string): Promise<Lote | null> {
-    const { data, error } = await this.supabase.client.from('lotes').select('*, galpon:galpones(*, granja:granjas(*))').eq('id', id).single();
+    const { data, error } = await this.supabase.client.from('lotes').select('*, galpon:galpones(*, granja:granjas(*))').eq('id', id);
     if (error) throw error;
-    return data;
+    if (!data || data.length === 0) return null;
+    return data[0];
   }
 
   async createLote(lote: Partial<Lote>): Promise<Lote> {
