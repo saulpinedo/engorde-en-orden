@@ -1,8 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LotService, Lote, Granja, Galpon } from '../../core/services/lot.service';
+import { RefreshService } from '../../core/services/refresh.service';
 import { format } from 'date-fns';
 
 @Component({
@@ -33,7 +34,7 @@ import { format } from 'date-fns';
             </tr>
           </thead>
           <tbody>
-            @for (lote of lotes; track lote.id) {
+            @for (lote of lotes(); track lote.id) {
               <tr>
                 <td><strong>{{ lote.nombre || 'Lote ' + lote.id?.slice(0,4) }}</strong></td>
                 <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
@@ -54,8 +55,8 @@ import { format } from 'date-fns';
         </table>
       </div>
       
-      @if (dialogVisible) {
-        <div class="modal-overlay" (click)="dialogVisible = false">
+      @if (dialogVisible()) {
+        <div class="modal-overlay" (click)="dialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>{{ editingLote ? 'Editar Lote' : 'Nuevo Lote' }}</h3>
             <div class="form-grid">
@@ -63,7 +64,7 @@ import { format } from 'date-fns';
                 <label>Granja</label>
                 <select [(ngModel)]="selectedGranja" (change)="onGranjaChange()" class="input-field">
                   <option value="">Seleccionar granja</option>
-                  @for (g of granjas; track g.id) {
+                  @for (g of granjas(); track g.id) {
                     <option [value]="g.id">{{ g.nombre }}</option>
                   }
                 </select>
@@ -72,7 +73,7 @@ import { format } from 'date-fns';
                 <label>Galpón</label>
                 <select [(ngModel)]="loteForm.galpon_id" class="input-field">
                   <option value="">Seleccionar galpón</option>
-                  @for (g of galponesFiltrados; track g.id) {
+                  @for (g of galponesFiltrados(); track g.id) {
                     <option [value]="g.id">{{ g.nombre }}</option>
                   }
                 </select>
@@ -103,7 +104,7 @@ import { format } from 'date-fns';
               </div>
             </div>
             <div class="modal-actions">
-              <button class="btn-secondary" (click)="dialogVisible = false">Cancelar</button>
+              <button class="btn-secondary" (click)="dialogVisible.set(false)">Cancelar</button>
               <button class="btn-primary" (click)="saveLote()">{{ editingLote ? 'Actualizar' : 'Crear' }}</button>
             </div>
           </div>
@@ -141,13 +142,15 @@ import { format } from 'date-fns';
 })
 export class LotesComponent implements OnInit {
   private lotService = inject(LotService);
+  private refresh = inject(RefreshService);
+  private refreshSub: any;
   private router = inject(Router);
   
-  lotes: Lote[] = [];
-  granjas: Granja[] = [];
-  galpones: Galpon[] = [];
-  galponesFiltrados: Galpon[] = [];
-  dialogVisible = false;
+  lotes = signal<Lote[]>([]);
+  granjas = signal<Granja[]>([]);
+  galpones = signal<Galpon[]>([]);
+  galponesFiltrados = signal<Galpon[]>([]);
+  dialogVisible = signal(false);
   editingLote: Lote | null = null;
   selectedGranja = '';
   fechaInicioStr = format(new Date(), 'yyyy-MM-dd');
@@ -156,15 +159,23 @@ export class LotesComponent implements OnInit {
   razas = ['COBB 500', 'ROSS 308', 'HUBBARD', 'HYBRO', 'ARNOLD'];
 
   async ngOnInit(): Promise<void> {
-    [this.lotes, this.granjas, this.galpones] = await Promise.all([
+    await this.loadData();
+    this.refreshSub = this.refresh.refresh$.subscribe(() => this.loadData());
+  }
+
+  async loadData(): Promise<void> {
+    const [lotesData, granjasData, galponesData] = await Promise.all([
       this.lotService.getLotes(),
       this.lotService.getGranjas(),
       this.lotService.getGalpones()
     ]);
+    this.lotes.set(lotesData);
+    this.granjas.set(granjasData);
+    this.galpones.set(galponesData);
   }
 
   onGranjaChange(): void {
-    this.galponesFiltrados = this.galpones.filter(g => g.granja_id === this.selectedGranja);
+    this.galponesFiltrados.set(this.galpones().filter(g => g.granja_id === this.selectedGranja));
     this.loteForm.galpon_id = '';
   }
 
@@ -179,19 +190,19 @@ export class LotesComponent implements OnInit {
   openDialog(): void {
     this.editingLote = null;
     this.selectedGranja = '';
-    this.galponesFiltrados = [];
+    this.galponesFiltrados.set([]);
     this.fechaInicioStr = format(new Date(), 'yyyy-MM-dd');
     this.loteForm = { galpon_id: '', nombre: '', raza: 'COBB 500', cantidad_inicial: 1000, precio_pollito: 0, peso_inicial: 45 };
-    this.dialogVisible = true;
+    this.dialogVisible.set(true);
   }
 
   editLote(lote: Lote): void {
     this.editingLote = lote;
     this.loteForm = { ...lote };
     this.selectedGranja = lote.galpon?.granja_id || '';
-    this.galponesFiltrados = this.galpones.filter(g => g.granja_id === this.selectedGranja);
+    this.galponesFiltrados.set(this.galpones().filter(g => g.granja_id === this.selectedGranja));
     this.fechaInicioStr = lote.fecha_inicio;
-    this.dialogVisible = true;
+    this.dialogVisible.set(true);
   }
 
   async saveLote(): Promise<void> {
@@ -205,12 +216,12 @@ export class LotesComponent implements OnInit {
       } else {
         await this.lotService.createLote(data);
       }
-      this.dialogVisible = false;
-      [this.lotes, this.granjas, this.galpones] = await Promise.all([
-        this.lotService.getLotes(),
-        this.lotService.getGranjas(),
-        this.lotService.getGalpones()
-      ]);
+      this.dialogVisible.set(false);
+      await this.loadData();
     } catch (e: any) { alert(e.message); }
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshSub) this.refreshSub.unsubscribe();
   }
 }

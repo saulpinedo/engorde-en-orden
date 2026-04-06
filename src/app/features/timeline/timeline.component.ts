@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Lote } from '../../core/services/lot.service';
+import { RefreshService } from '../../core/services/refresh.service';
 import { format } from 'date-fns';
 
 @Component({
@@ -10,11 +11,11 @@ import { format } from 'date-fns';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="page-container">
-      @if (lote) {
+      @if (lote()) {
         <div class="page-header">
           <div>
-            <h1>Timeline - {{ lote.nombre || 'Lote' }}</h1>
-            <p class="subtitle">{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</p>
+            <h1>Timeline - {{ lote()?.nombre || 'Lote' }}</h1>
+            <p class="subtitle">{{ lote()?.galpon?.granja?.nombre }} / {{ lote()?.galpon?.nombre }}</p>
           </div>
           <div class="header-actions">
             <button class="btn-danger" (click)="openMortalidadDialog()">💔 Mortalidad</button>
@@ -24,16 +25,16 @@ import { format } from 'date-fns';
         </div>
         
         <div class="stats-row">
-          <div class="stat"><span class="stat-label">Días</span><span class="stat-value">{{ diasVida }}</span></div>
-          <div class="stat"><span class="stat-label">Etapa</span><span class="tag" [class]="'tag-' + lote.etapa_actual.toLowerCase()">{{ lote.etapa_actual }}</span></div>
-          <div class="stat"><span class="stat-label">Pollos</span><span class="stat-value">{{ lote.cantidad_actual | number }}</span></div>
-          <div class="stat"><span class="stat-label">Mortalidad</span><span class="stat-value text-danger">{{ mortalidad }}%</span></div>
+          <div class="stat"><span class="stat-label">Días</span><span class="stat-value">{{ diasVida() }}</span></div>
+          <div class="stat"><span class="stat-label">Etapa</span><span class="tag" [class]="'tag-' + lote()!.etapa_actual.toLowerCase()">{{ lote()!.etapa_actual }}</span></div>
+          <div class="stat"><span class="stat-label">Pollos</span><span class="stat-value">{{ lote()!.cantidad_actual | number }}</span></div>
+          <div class="stat"><span class="stat-label">Mortalidad</span><span class="stat-value text-danger">{{ mortalidad() }}%</span></div>
         </div>
         
         <div class="card">
           <h3>Línea de Tiempo</h3>
           <div class="timeline-scroll">
-            @for (event of timelineEvents; track event.day) {
+            @for (event of timelineEvents(); track event.day) {
               <div class="timeline-day" [class]="'etapa-' + event.etapa.toLowerCase()" [class.hoy]="isToday(event.date)" [class.pasado]="isPasado(event.date)">
                 <div class="day-header">Día {{ event.day }}<br/><small>{{ formatDate(event.date) }}</small></div>
                 <div class="day-events">
@@ -54,44 +55,44 @@ import { format } from 'date-fns';
         <div class="loading">Cargando...</div>
       }
       
-      @if (mortalidadDialogVisible) {
-        <div class="modal-overlay" (click)="mortalidadDialogVisible = false">
+      @if (mortalidadDialogVisible()) {
+        <div class="modal-overlay" (click)="mortalidadDialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Registrar Mortalidad</h3>
             <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="mortalidadForm.fecha" class="input-field"/></div>
             <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="mortalidadForm.cantidad" min="1" class="input-field"/></div>
             <div class="form-group"><label>Causa</label><input type="text" [(ngModel)]="mortalidadForm.causa" placeholder="Opcional" class="input-field"/></div>
             <div class="modal-actions">
-              <button class="btn-secondary" (click)="mortalidadDialogVisible = false">Cancelar</button>
+              <button class="btn-secondary" (click)="mortalidadDialogVisible.set(false)">Cancelar</button>
               <button class="btn-primary" (click)="saveMortalidad()">Guardar</button>
             </div>
           </div>
         </div>
       }
       
-      @if (consumoDialogVisible) {
-        <div class="modal-overlay" (click)="consumoDialogVisible = false">
+      @if (consumoDialogVisible()) {
+        <div class="modal-overlay" (click)="consumoDialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Registrar Consumo</h3>
             <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="consumoForm.fecha" class="input-field"/></div>
             <div class="form-group"><label>Cantidad (kg)</label><input type="number" [(ngModel)]="consumoForm.cantidad_kg" step="0.5" class="input-field"/></div>
             <div class="modal-actions">
-              <button class="btn-secondary" (click)="consumoDialogVisible = false">Cancelar</button>
+              <button class="btn-secondary" (click)="consumoDialogVisible.set(false)">Cancelar</button>
               <button class="btn-primary" (click)="saveConsumo()">Guardar</button>
             </div>
           </div>
         </div>
       }
       
-      @if (pesajeDialogVisible) {
-        <div class="modal-overlay" (click)="pesajeDialogVisible = false">
+      @if (pesajeDialogVisible()) {
+        <div class="modal-overlay" (click)="pesajeDialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Registrar Pesaje</h3>
             <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="pesajeForm.fecha" class="input-field"/></div>
             <div class="form-group"><label>Peso Promedio (g)</label><input type="number" [(ngModel)]="pesajeForm.peso_promedio" step="10" class="input-field"/></div>
             <div class="form-group"><label>Muestra</label><input type="number" [(ngModel)]="pesajeForm.muestra" min="1" class="input-field"/></div>
             <div class="modal-actions">
-              <button class="btn-secondary" (click)="pesajeDialogVisible = false">Cancelar</button>
+              <button class="btn-secondary" (click)="pesajeDialogVisible.set(false)">Cancelar</button>
               <button class="btn-primary" (click)="savePesaje()">Guardar</button>
             </div>
           </div>
@@ -153,86 +154,102 @@ import { format } from 'date-fns';
     @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
   `]
 })
-export class TimelineComponent implements OnInit {
+export class TimelineComponent implements OnInit, OnDestroy {
   private lotService = inject(LotService);
-  lote: Lote | null = null;
-  diasVida = 0;
-  mortalidad = 0;
-  today = new Date();
+  private refresh = inject(RefreshService);
+  private refreshSub: any;
+
+  lote = signal<Lote | null>(null);
+  diasVida = signal(0);
+  mortalidad = signal(0);
+  timelineEvents = signal<any[]>([]);
   
-  timelineEvents: any[] = [];
-  
-  mortalidadDialogVisible = false;
+  mortalidadDialogVisible = signal(false);
   mortalidadForm: any = { cantidad: 1 };
   
-  consumoDialogVisible = false;
+  consumoDialogVisible = signal(false);
   consumoForm: any = { cantidad_kg: 0 };
   
-  pesajeDialogVisible = false;
+  pesajeDialogVisible = signal(false);
   pesajeForm: any = { muestra: 10 };
+
+  today = new Date();
 
   async ngOnInit(): Promise<void> {
     const lotes = await this.lotService.getLotes();
     const activo = lotes.find(l => l.estado === 'ACTIVO');
     if (activo) await this.loadLote(activo.id!);
+    this.refreshSub = this.refresh.refresh$.subscribe(() => {
+      if (this.lote()) this.loadLote(this.lote()!.id!);
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshSub) this.refreshSub.unsubscribe();
   }
 
   async loadLote(id: string): Promise<void> {
-    this.lote = await this.lotService.getLote(id);
-    if (this.lote) {
-      this.diasVida = this.lotService.getDiasVida(this.lote.fecha_inicio);
-      this.mortalidad = Math.round((1 - this.lote.cantidad_actual / this.lote.cantidad_inicial) * 100 * 10) / 10;
+    const loteData = await this.lotService.getLote(id);
+    if (loteData) {
+      this.lote.set(loteData);
+      this.diasVida.set(this.lotService.getDiasVida(loteData.fecha_inicio));
+      this.mortalidad.set(Math.round((1 - loteData.cantidad_actual / loteData.cantidad_inicial) * 100 * 10) / 10);
       await this.buildTimeline();
     }
   }
 
   async buildTimeline(): Promise<void> {
-    if (!this.lote) return;
+    const currentLote = this.lote();
+    if (!currentLote) return;
     const [mortalidades, consumos, pesajes] = await Promise.all([
-      this.lotService.getMortalidades(this.lote.id!),
-      this.lotService.getConsumos(this.lote.id!),
-      this.lotService.getPesajes(this.lote.id!)
+      this.lotService.getMortalidades(currentLote.id!),
+      this.lotService.getConsumos(currentLote.id!),
+      this.lotService.getPesajes(currentLote.id!)
     ]);
     
-    this.timelineEvents = [];
-    const days = Math.min(this.diasVida, 45);
+    const events: any[] = [];
+    const days = Math.min(this.diasVida(), 45);
     for (let i = 0; i < days; i++) {
-      const date = new Date(this.lote.fecha_inicio);
+      const date = new Date(currentLote.fecha_inicio);
       date.setDate(date.getDate() + i);
       const etapa = this.lotService.getEtapaActual(i + 1);
       const mort = mortalidades.find(m => m.fecha === format(date, 'yyyy-MM-dd'));
       const cons = consumos.find(c => c.fecha === format(date, 'yyyy-MM-dd'));
       const pes = pesajes.find(p => p.fecha === format(date, 'yyyy-MM-dd'));
-      this.timelineEvents.push({ date, day: i + 1, etapa, ...(mort && { tipo: 'mortalidad', cantidad: mort.cantidad }), ...(cons && { tipo: 'consumo', cantidad: cons.cantidad_kg }), ...(pes && { tipo: 'pesaje', peso: pes.peso_promedio }) });
+      events.push({ date, day: i + 1, etapa, ...(mort && { tipo: 'mortalidad', cantidad: mort.cantidad }), ...(cons && { tipo: 'consumo', cantidad: cons.cantidad_kg }), ...(pes && { tipo: 'pesaje', peso: pes.peso_promedio }) });
     }
+    this.timelineEvents.set(events);
   }
 
   isToday(date: Date): boolean { return date.toDateString() === this.today.toDateString(); }
   isPasado(date: Date): boolean { return date < this.today && !this.isToday(date); }
   formatDate(date: Date): string { return format(date, 'dd/MM'); }
 
-  openMortalidadDialog(): void { this.mortalidadForm = { cantidad: 1 }; this.mortalidadDialogVisible = true; }
-  openConsumoDialog(): void { this.consumoForm = { cantidad_kg: 0 }; this.consumoDialogVisible = true; }
-  openPesajeDialog(): void { this.pesajeForm = { muestra: 10 }; this.pesajeDialogVisible = true; }
+  openMortalidadDialog(): void { this.mortalidadForm = { cantidad: 1 }; this.mortalidadDialogVisible.set(true); }
+  openConsumoDialog(): void { this.consumoForm = { cantidad_kg: 0 }; this.consumoDialogVisible.set(true); }
+  openPesajeDialog(): void { this.pesajeForm = { muestra: 10 }; this.pesajeDialogVisible.set(true); }
 
   async saveMortalidad(): Promise<void> {
-    if (!this.lote) return;
-    await this.lotService.createMortalidad({ ...this.mortalidadForm, lote_id: this.lote.id!, fecha: this.mortalidadForm.fecha } as any);
-    this.mortalidadDialogVisible = false;
-    await this.loadLote(this.lote.id!);
+    const currentLote = this.lote();
+    if (!currentLote) return;
+    await this.lotService.createMortalidad({ ...this.mortalidadForm, lote_id: currentLote.id!, fecha: this.mortalidadForm.fecha } as any);
+    this.mortalidadDialogVisible.set(false);
+    await this.loadLote(currentLote.id!);
   }
 
   async saveConsumo(): Promise<void> {
-    if (!this.lote) return;
-    await this.lotService.createConsumo({ ...this.consumoForm, lote_id: this.lote.id!, fecha: this.consumoForm.fecha, etapa: this.lote.etapa_actual } as any);
-    this.consumoDialogVisible = false;
-    await this.loadLote(this.lote.id!);
+    const currentLote = this.lote();
+    if (!currentLote) return;
+    await this.lotService.createConsumo({ ...this.consumoForm, lote_id: currentLote.id!, fecha: this.consumoForm.fecha, etapa: currentLote.etapa_actual } as any);
+    this.consumoDialogVisible.set(false);
+    await this.loadLote(currentLote.id!);
   }
 
   async savePesaje(): Promise<void> {
-    if (!this.lote) return;
-    await this.lotService.createPesaje({ ...this.pesajeForm, lote_id: this.lote.id!, fecha: this.pesajeForm.fecha } as any);
-    this.pesajeDialogVisible = false;
-    await this.loadLote(this.lote.id!);
+    const currentLote = this.lote();
+    if (!currentLote) return;
+    await this.lotService.createPesaje({ ...this.pesajeForm, lote_id: currentLote.id!, fecha: this.pesajeForm.fecha } as any);
+    this.pesajeDialogVisible.set(false);
+    await this.loadLote(currentLote.id!);
   }
 }

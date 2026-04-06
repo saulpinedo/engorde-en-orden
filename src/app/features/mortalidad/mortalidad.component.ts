@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Lote, Mortalidad } from '../../core/services/lot.service';
@@ -18,22 +18,22 @@ import { RefreshService } from '../../core/services/refresh.service';
         <table class="data-table">
           <thead><tr><th>Fecha</th><th>Lote</th><th>Cantidad</th><th>Causa</th></tr></thead>
           <tbody>
-            @for (reg of registros; track reg.id) {
+            @for (reg of registros(); track reg.id) {
               <tr><td>{{ reg.fecha | date:'dd/MM/yyyy' }}</td><td>{{ reg.lote?.nombre || 'Lote' }}</td><td class="text-danger">{{ reg.cantidad }}</td><td>{{ reg.causa || '-' }}</td></tr>
             }
             @empty { <tr><td colspan="4" class="text-center">No hay registros</td></tr> }
           </tbody>
         </table>
       </div>
-      @if (dialogVisible) {
-        <div class="modal-overlay" (click)="dialogVisible = false">
+      @if (dialogVisible()) {
+        <div class="modal-overlay" (click)="dialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Registrar Mortalidad</h3>
-            <div class="form-group"><label>Lote</label><select [(ngModel)]="form.lote_id" class="input-field"><option value="">Seleccionar</option>@for (l of lotes; track l.id) { <option [value]="l.id">{{ l.nombre || 'Lote ' + l.id?.slice(0,4) }}</option> }</select></div>
+            <div class="form-group"><label>Lote</label><select [(ngModel)]="form.lote_id" class="input-field"><option value="">Seleccionar</option>@for (l of lotes(); track l.id) { <option [value]="l.id">{{ l.nombre || 'Lote ' + l.id?.slice(0,4) }}</option> }</select></div>
             <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
             <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" min="1" class="input-field"/></div>
             <div class="form-group"><label>Causa</label><input type="text" [(ngModel)]="form.causa" placeholder="Opcional" class="input-field"/></div>
-            <div class="modal-actions"><button class="btn-secondary" (click)="dialogVisible = false">Cancelar</button><button class="btn-primary" (click)="save()">Guardar</button></div>
+            <div class="modal-actions"><button class="btn-secondary" (click)="dialogVisible.set(false)">Cancelar</button><button class="btn-primary" (click)="save()">Guardar</button></div>
           </div>
         </div>
       }
@@ -45,14 +45,45 @@ export class MortalidadComponent implements OnInit, OnDestroy {
   private lotService = inject(LotService);
   private refresh = inject(RefreshService);
   private refreshSub: any;
-  registros: any[] = []; lotes: Lote[] = []; dialogVisible = false; form: any = { cantidad: 1 };
-  async ngOnInit(): Promise<void> { 
-    this.lotes = await this.lotService.getLotes(); 
+
+  registros = signal<any[]>([]);
+  lotes = signal<Lote[]>([]);
+  dialogVisible = signal(false);
+  form: any = { cantidad: 1 };
+
+  async ngOnInit(): Promise<void> {
+    const lotesData = await this.lotService.getLotes();
+    this.lotes.set(lotesData);
     await this.loadData();
     this.refreshSub = this.refresh.refresh$.subscribe(() => this.loadData());
   }
-  ngOnDestroy(): void { if (this.refreshSub) this.refreshSub.unsubscribe(); }
-  async loadData(): Promise<void> { const all: any[] = []; for (const l of this.lotes) { const m: any[] = await this.lotService.getMortalidades(l.id!); m.forEach(x => x.lote = l); all.push(...m); } this.registros = all.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); }
-  openDialog(): void { this.form = { cantidad: 1 }; this.dialogVisible = true; }
-  async save(): Promise<void> { if (!this.form.lote_id || !this.form.fecha || !this.form.cantidad) { alert('Completa los campos'); return; } await this.lotService.createMortalidad({ ...this.form, fecha: this.form.fecha } as Mortalidad); this.dialogVisible = false; await this.loadData(); }
+
+  ngOnDestroy(): void {
+    if (this.refreshSub) this.refreshSub.unsubscribe();
+  }
+
+  async loadData(): Promise<void> {
+    const all: any[] = [];
+    for (const l of this.lotes()) {
+      const m: any[] = await this.lotService.getMortalidades(l.id!);
+      m.forEach(x => x.lote = l);
+      all.push(...m);
+    }
+    this.registros.set(all.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()));
+  }
+
+  openDialog(): void {
+    this.form = { cantidad: 1 };
+    this.dialogVisible.set(true);
+  }
+
+  async save(): Promise<void> {
+    if (!this.form.lote_id || !this.form.fecha || !this.form.cantidad) {
+      alert('Completa los campos');
+      return;
+    }
+    await this.lotService.createMortalidad({ ...this.form, fecha: this.form.fecha } as Mortalidad);
+    this.dialogVisible.set(false);
+    await this.loadData();
+  }
 }

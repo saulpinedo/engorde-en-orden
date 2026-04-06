@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Granja } from '../../core/services/lot.service';
@@ -28,7 +28,7 @@ import { LotService, Granja } from '../../core/services/lot.service';
             </tr>
           </thead>
           <tbody>
-            @for (granja of granjas; track granja.id) {
+            @for (granja of granjas(); track granja.id) {
               <tr>
                 <td><strong>{{ granja.nombre }}</strong></td>
                 <td>{{ granja.ubicacion || '-' }}</td>
@@ -46,8 +46,8 @@ import { LotService, Granja } from '../../core/services/lot.service';
         </table>
       </div>
       
-      @if (dialogVisible) {
-        <div class="modal-overlay" (click)="dialogVisible = false">
+      @if (dialogVisible()) {
+        <div class="modal-overlay" (click)="dialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>{{ editingGranja ? 'Editar Granja' : 'Nueva Granja' }}</h3>
             <div class="form-group">
@@ -59,7 +59,7 @@ import { LotService, Granja } from '../../core/services/lot.service';
               <input type="text" [(ngModel)]="granjaForm.ubicacion" placeholder="Ciudad, departamento, etc." class="input-field"/>
             </div>
             <div class="modal-actions">
-              <button class="btn-secondary" (click)="dialogVisible = false">Cancelar</button>
+              <button class="btn-secondary" (click)="dialogVisible.set(false)">Cancelar</button>
               <button class="btn-primary" (click)="saveGranja()">{{ editingGranja ? 'Actualizar' : 'Crear' }}</button>
             </div>
           </div>
@@ -93,25 +93,31 @@ import { LotService, Granja } from '../../core/services/lot.service';
 })
 export class GranjasComponent implements OnInit {
   private lotService = inject(LotService);
-  granjas: Granja[] = [];
-  dialogVisible = false;
+  
+  granjas = signal<Granja[]>([]);
+  dialogVisible = signal(false);
   editingGranja: Granja | null = null;
   granjaForm: Partial<Granja> = { nombre: '', ubicacion: '' };
 
   async ngOnInit(): Promise<void> {
-    this.granjas = await this.lotService.getGranjas();
+    await this.loadData();
+  }
+
+  async loadData(): Promise<void> {
+    const data = await this.lotService.getGranjas();
+    this.granjas.set(data);
   }
 
   openDialog(): void {
     this.editingGranja = null;
     this.granjaForm = { nombre: '', ubicacion: '' };
-    this.dialogVisible = true;
+    this.dialogVisible.set(true);
   }
 
   editGranja(granja: Granja): void {
     this.editingGranja = granja;
     this.granjaForm = { ...granja };
-    this.dialogVisible = true;
+    this.dialogVisible.set(true);
   }
 
   async saveGranja(): Promise<void> {
@@ -122,15 +128,15 @@ export class GranjasComponent implements OnInit {
       } else {
         await this.lotService.createGranja(this.granjaForm);
       }
-      this.dialogVisible = false;
-      this.granjas = await this.lotService.getGranjas();
+      this.dialogVisible.set(false);
+      await this.loadData();
     } catch (e: any) { alert(e.message); }
   }
 
   async deleteGranja(granja: Granja): Promise<void> {
     if (confirm(`¿Eliminar la granja "${granja.nombre}"?`)) {
       await this.lotService.deleteGranja(granja.id!);
-      this.granjas = await this.lotService.getGranjas();
+      await this.loadData();
     }
   }
 }

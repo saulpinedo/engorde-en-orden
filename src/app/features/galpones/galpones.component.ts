@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Granja, Galpon } from '../../core/services/lot.service';
@@ -17,21 +17,21 @@ import { LotService, Granja, Galpon } from '../../core/services/lot.service';
         <table class="data-table">
           <thead><tr><th>Nombre</th><th>Granja</th><th>Capacidad</th><th>Acciones</th></tr></thead>
           <tbody>
-            @for (g of galpones; track g.id) {
+            @for (g of galpones(); track g.id) {
               <tr><td><strong>{{ g.nombre }}</strong></td><td>{{ g.granja?.nombre }}</td><td>{{ g.capacidad ? g.capacidad + ' pollos' : '-' }}</td><td><button class="btn-icon" (click)="deleteGalpon(g)">🗑️</button></td></tr>
             }
             @empty { <tr><td colspan="4" class="text-center">No hay galpones registrados</td></tr> }
           </tbody>
         </table>
       </div>
-      @if (dialogVisible) {
-        <div class="modal-overlay" (click)="dialogVisible = false">
+      @if (dialogVisible()) {
+        <div class="modal-overlay" (click)="dialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Nuevo Galpón</h3>
-            <div class="form-group"><label>Granja</label><select [(ngModel)]="form.granja_id" class="input-field"><option value="">Seleccionar</option>@for (g of granjas; track g.id) { <option [value]="g.id">{{ g.nombre }}</option> }</select></div>
+            <div class="form-group"><label>Granja</label><select [(ngModel)]="form.granja_id" class="input-field"><option value="">Seleccionar</option>@for (g of granjas(); track g.id) { <option [value]="g.id">{{ g.nombre }}</option> }</select></div>
             <div class="form-group"><label>Nombre</label><input type="text" [(ngModel)]="form.nombre" placeholder="Ej: Galpón A" class="input-field"/></div>
             <div class="form-group"><label>Capacidad</label><input type="number" [(ngModel)]="form.capacidad" min="0" placeholder="Opcional" class="input-field"/></div>
-            <div class="modal-actions"><button class="btn-secondary" (click)="dialogVisible = false">Cancelar</button><button class="btn-primary" (click)="save()">Crear</button></div>
+            <div class="modal-actions"><button class="btn-secondary" (click)="dialogVisible.set(false)">Cancelar</button><button class="btn-primary" (click)="save()">Crear</button></div>
           </div>
         </div>
       }
@@ -41,9 +41,41 @@ import { LotService, Granja, Galpon } from '../../core/services/lot.service';
 })
 export class GalponesComponent implements OnInit {
   private lotService = inject(LotService);
-  galpones: Galpon[] = []; granjas: Granja[] = []; dialogVisible = false; form: any = {};
-  async ngOnInit(): Promise<void> { [this.galpones, this.granjas] = await Promise.all([this.lotService.getGalpones(), this.lotService.getGranjas()]); }
-  openDialog(): void { this.form = {}; this.dialogVisible = true; }
-  async save(): Promise<void> { if (!this.form.granja_id || !this.form.nombre) { alert('Completa los campos'); return; } await this.lotService.createGalpon(this.form); this.dialogVisible = false; [this.galpones, this.granjas] = await Promise.all([this.lotService.getGalpones(), this.lotService.getGranjas()]); }
-  async deleteGalpon(g: Galpon): Promise<void> { if (confirm(`¿Eliminar "${g.nombre}"?`)) { await this.lotService.deleteGalpon(g.id!); this.galpones = await this.lotService.getGalpones(); } }
+  
+  galpones = signal<Galpon[]>([]);
+  granjas = signal<Granja[]>([]);
+  dialogVisible = signal(false);
+  form: any = {};
+
+  async ngOnInit(): Promise<void> {
+    await this.loadData();
+  }
+
+  async loadData(): Promise<void> {
+    const [galponesData, granjasData] = await Promise.all([
+      this.lotService.getGalpones(),
+      this.lotService.getGranjas()
+    ]);
+    this.galpones.set(galponesData);
+    this.granjas.set(granjasData);
+  }
+
+  openDialog(): void {
+    this.form = {};
+    this.dialogVisible.set(true);
+  }
+
+  async save(): Promise<void> {
+    if (!this.form.granja_id || !this.form.nombre) { alert('Completa los campos'); return; }
+    await this.lotService.createGalpon(this.form);
+    this.dialogVisible.set(false);
+    await this.loadData();
+  }
+
+  async deleteGalpon(g: Galpon): Promise<void> {
+    if (confirm(`¿Eliminar "${g.nombre}"?`)) {
+      await this.lotService.deleteGalpon(g.id!);
+      await this.loadData();
+    }
+  }
 }

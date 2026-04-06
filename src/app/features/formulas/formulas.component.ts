@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../../core/services/supabase.service';
@@ -13,7 +13,7 @@ import { SupabaseService } from '../../core/services/supabase.service';
         <div><h1>Fórmulas de Alimento</h1><p class="subtitle">Recetas de alimento por etapa de crecimiento</p></div>
       </div>
       <div class="formulas-grid">
-        @for (f of formulas; track f.id) {
+        @for (f of formulas(); track f.id) {
           <div class="formula-card">
             <div class="formula-header"><h3>{{ f.nombre }}</h3><span class="tag tag-{{ f.etapa?.toLowerCase() }}">{{ f.etapa }}</span></div>
             <p class="desc">{{ f.descripcion || 'Sin descripción' }}</p>
@@ -34,10 +34,19 @@ import { SupabaseService } from '../../core/services/supabase.service';
 })
 export class FormulasComponent implements OnInit {
   private supabase = inject(SupabaseService);
-  formulas: any[] = [];
+  formulas = signal<any[]>([]);
+
   async ngOnInit(): Promise<void> {
     const { data } = await this.supabase.client.from('formulas').select('*');
     const { data: detalles } = await this.supabase.client.from('formula_detalles').select('*, ingrediente:ingredientes(nombre, unidad)');
-    this.formulas = (data || []).map((f: any) => ({ ...f, detalles: (detalles || []).filter((d: any) => d.formula_id === f.id).map((d: any) => ({ ingrediente: d.ingrediente?.nombre || '?', cantidad: d.cantidad, unidad: d.ingrediente?.unidad || 'kg' })) }));
+    const formulasData = (data || []).map((f: any) => ({
+      ...f,
+      detalles: (detalles || []).filter((d: any) => d.formula_id === f.id).map((d: any) => ({
+        ingrediente: d.ingrediente?.nombre || '?',
+        cantidad: d.cantidad,
+        unidad: d.ingrediente?.unidad || 'kg'
+      }))
+    }));
+    this.formulas.set(formulasData);
   }
 }

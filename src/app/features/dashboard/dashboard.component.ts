@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { LotService, Lote } from '../../core/services/lot.service';
@@ -15,7 +15,7 @@ import { RefreshService } from '../../core/services/refresh.service';
         <p class="subtitle">Resumen de tu operación de engorde</p>
       </div>
 
-      @if (loading) {
+      @if (loading()) {
         <div class="loading-state">
           <div class="spinner"></div>
           <p>Cargando datos...</p>
@@ -25,28 +25,28 @@ import { RefreshService } from '../../core/services/refresh.service';
           <div class="stat-card">
             <div class="stat-icon verde">📦</div>
             <div class="stat-content">
-              <span class="stat-value">{{ stats.lotesActivos }}</span>
+              <span class="stat-value">{{ stats().lotesActivos }}</span>
               <span class="stat-label">Lotes Activos</span>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon amarillo">🐔</div>
             <div class="stat-content">
-              <span class="stat-value">{{ stats.totalPollos | number }}</span>
+              <span class="stat-value">{{ stats().totalPollos | number }}</span>
               <span class="stat-label">Pollos en Granja</span>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon rojo">💔</div>
             <div class="stat-content">
-              <span class="stat-value">{{ stats.mortalidadPromedio | number:'1.1-1' }}%</span>
+              <span class="stat-value">{{ stats().mortalidadPromedio | number:'1.1-1' }}%</span>
               <span class="stat-label">Mortalidad Promedio</span>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon azul">⚖️</div>
             <div class="stat-content">
-              <span class="stat-value">{{ stats.pesoPromedio | number:'1.1-1' }}g</span>
+              <span class="stat-value">{{ stats().pesoPromedio | number:'1.1-1' }}g</span>
               <span class="stat-label">Peso Promedio</span>
             </div>
           </div>
@@ -70,7 +70,7 @@ import { RefreshService } from '../../core/services/refresh.service';
                 </tr>
               </thead>
               <tbody>
-                @for (lote of lotes.slice(0, 5); track lote.id) {
+                @for (lote of lotes().slice(0, 5); track lote.id) {
                   <tr>
                     <td><strong>{{ lote.nombre || 'Lote ' + lote.id?.slice(0,4) }}</strong></td>
                     <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
@@ -141,31 +141,37 @@ import { RefreshService } from '../../core/services/refresh.service';
     @media (max-width: 1024px) { .content-grid { grid-template-columns: 1fr; } }
   `]
 })
-  export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private lotService = inject(LotService);
   private refresh = inject(RefreshService);
   private refreshSub: any;
-  lotes: Lote[] = [];
-  loading = true;
-  stats = { lotesActivos: 0, totalPollos: 0, mortalidadPromedio: 0, pesoPromedio: 2500 };
 
-  private async loadData(): Promise<void> {
-    this.loading = true;
-    try {
-      this.lotes = await this.lotService.getLotes();
-      const activos = this.lotes.filter(l => l.estado === 'ACTIVO');
-      this.stats.lotesActivos = activos.length;
-      this.stats.totalPollos = activos.reduce((sum, l) => sum + l.cantidad_actual, 0);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      this.loading = false;
-    }
-  }
+  lotes = signal<Lote[]>([]);
+  loading = signal(true);
+  stats = signal({ lotesActivos: 0, totalPollos: 0, mortalidadPromedio: 0, pesoPromedio: 2500 });
 
   async ngOnInit(): Promise<void> {
     await this.loadData();
     this.refreshSub = this.refresh.refresh$.subscribe(() => this.loadData());
+  }
+
+  async loadData(): Promise<void> {
+    this.loading.set(true);
+    try {
+      const lotesData = await this.lotService.getLotes();
+      this.lotes.set(lotesData);
+      const activos = lotesData.filter(l => l.estado === 'ACTIVO');
+      this.stats.set({
+        lotesActivos: activos.length,
+        totalPollos: activos.reduce((sum, l) => sum + l.cantidad_actual, 0),
+        mortalidadPromedio: 0,
+        pesoPromedio: 2500
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   ngOnDestroy(): void {

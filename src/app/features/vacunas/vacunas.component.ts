@@ -1,8 +1,7 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Vacuna } from '../../core/services/lot.service';
-import { SupabaseService } from '../../core/services/supabase.service';
 
 @Component({
   selector: 'app-vacunas',
@@ -18,7 +17,7 @@ import { SupabaseService } from '../../core/services/supabase.service';
         <table class="data-table">
           <thead><tr><th>Nombre</th><th>Días de Aplicación</th><th>Descripción</th></tr></thead>
           <tbody>
-            @for (v of vacunas; track v.id) {
+            @for (v of vacunas(); track v.id) {
               <tr><td><strong>{{ v.nombre }}</strong></td><td>{{ v.dias_aplicacion ? 'Día ' + v.dias_aplicacion : '-' }}</td><td>{{ v.descripcion || '-' }}</td></tr>
             }
             @empty { <tr><td colspan="3" class="text-center">No hay vacunas registradas</td></tr> }
@@ -31,8 +30,12 @@ import { SupabaseService } from '../../core/services/supabase.service';
 })
 export class VacunasComponent implements OnInit {
   private lotService = inject(LotService);
-  private supabase = inject(SupabaseService);
-  vacunas: Vacuna[] = [];
-  async ngOnInit(): Promise<void> { this.vacunas = await this.lotService.getVacunas(); }
+  vacunas = signal<Vacuna[]>([]);
+
+  async ngOnInit(): Promise<void> {
+    const data = await this.lotService.getVacunas();
+    this.vacunas.set(data);
+  }
+
   openDialog(): void { alert('Función de agregar vacuna en desarrollo'); }
 }
