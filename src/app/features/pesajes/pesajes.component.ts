@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Lote, Pesaje } from '../../core/services/lot.service';
-import { AuthService } from '../../core/services/auth.service';
+import { RefreshService } from '../../core/services/refresh.service';
 
 @Component({
   selector: 'app-pesajes',
@@ -43,15 +43,15 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class PesajesComponent implements OnInit, OnDestroy {
   private lotService = inject(LotService);
-  private authService = inject(AuthService);
-  private authSub: any;
+  private refresh = inject(RefreshService);
+  private refreshSub: any;
   registros: any[] = []; lotes: Lote[] = []; dialogVisible = false; form: any = { muestra: 10 };
   async ngOnInit(): Promise<void> { 
     this.lotes = await this.lotService.getLotes(); 
     await this.loadData();
-    this.authSub = this.authService.authChange?.subscribe(() => this.loadData());
+    this.refreshSub = this.refresh.refresh$.subscribe(() => this.loadData());
   }
-  ngOnDestroy(): void { if (this.authSub) this.authSub.unsubscribe(); }
+  ngOnDestroy(): void { if (this.refreshSub) this.refreshSub.unsubscribe(); }
   async loadData(): Promise<void> { const all: any[] = []; for (const l of this.lotes) { const p: any[] = await this.lotService.getPesajes(l.id!); p.forEach(x => x.lote = l); all.push(...p); } this.registros = all.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); }
   getDiasVida(reg: any): number { const l = this.lotes.find(x => x.id === reg.lote_id); return l ? this.lotService.getDiasVida(l.fecha_inicio) : 0; }
   openDialog(): void { this.form = { muestra: 10 }; this.dialogVisible = true; }

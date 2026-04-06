@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LotService, Lote, Mortalidad } from '../../core/services/lot.service';
-import { AuthService } from '../../core/services/auth.service';
+import { RefreshService } from '../../core/services/refresh.service';
 
 @Component({
   selector: 'app-mortalidad',
@@ -43,15 +43,15 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class MortalidadComponent implements OnInit, OnDestroy {
   private lotService = inject(LotService);
-  private authService = inject(AuthService);
-  private authSub: any;
+  private refresh = inject(RefreshService);
+  private refreshSub: any;
   registros: any[] = []; lotes: Lote[] = []; dialogVisible = false; form: any = { cantidad: 1 };
   async ngOnInit(): Promise<void> { 
     this.lotes = await this.lotService.getLotes(); 
     await this.loadData();
-    this.authSub = this.authService.authChange?.subscribe(() => this.loadData());
+    this.refreshSub = this.refresh.refresh$.subscribe(() => this.loadData());
   }
-  ngOnDestroy(): void { if (this.authSub) this.authSub.unsubscribe(); }
+  ngOnDestroy(): void { if (this.refreshSub) this.refreshSub.unsubscribe(); }
   async loadData(): Promise<void> { const all: any[] = []; for (const l of this.lotes) { const m: any[] = await this.lotService.getMortalidades(l.id!); m.forEach(x => x.lote = l); all.push(...m); } this.registros = all.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); }
   openDialog(): void { this.form = { cantidad: 1 }; this.dialogVisible = true; }
   async save(): Promise<void> { if (!this.form.lote_id || !this.form.fecha || !this.form.cantidad) { alert('Completa los campos'); return; } await this.lotService.createMortalidad({ ...this.form, fecha: this.form.fecha } as Mortalidad); this.dialogVisible = false; await this.loadData(); }

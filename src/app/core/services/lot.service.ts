@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { RefreshService } from './refresh.service';
 import { differenceInDays } from 'date-fns';
 
 export interface Granja {
@@ -95,6 +96,7 @@ export interface Hito {
 })
 export class LotService {
   private loadingSignal = signal(false);
+  private refresh = inject(RefreshService);
 
   constructor(private supabase: SupabaseService) {}
 
@@ -117,18 +119,21 @@ export class LotService {
   async createGranja(granja: Partial<Granja>): Promise<Granja> {
     const { data, error } = await this.supabase.client.from('granjas').insert(granja).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('granjas');
     return data;
   }
 
   async updateGranja(id: string, granja: Partial<Granja>): Promise<Granja> {
     const { data, error } = await this.supabase.client.from('granjas').update({ ...granja, updated_at: new Date().toISOString() }).eq('id', id).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('granjas');
     return data;
   }
 
   async deleteGranja(id: string): Promise<void> {
     const { error } = await this.supabase.client.from('granjas').delete().eq('id', id);
     if (error) throw error;
+    this.refresh.triggerRefresh('granjas');
   }
 
   async getGalpones(granjaId?: string): Promise<Galpon[]> {
@@ -142,18 +147,21 @@ export class LotService {
   async createGalpon(galpon: Partial<Galpon>): Promise<Galpon> {
     const { data, error } = await this.supabase.client.from('galpones').insert(galpon).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('galpones');
     return data;
   }
 
   async updateGalpon(id: string, galpon: Partial<Galpon>): Promise<Galpon> {
     const { data, error } = await this.supabase.client.from('galpones').update({ ...galpon, updated_at: new Date().toISOString() }).eq('id', id).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('galpones');
     return data;
   }
 
   async deleteGalpon(id: string): Promise<void> {
     const { error } = await this.supabase.client.from('galpones').delete().eq('id', id);
     if (error) throw error;
+    this.refresh.triggerRefresh('galpones');
   }
 
   async getLotes(galponId?: string): Promise<Lote[]> {
@@ -178,18 +186,21 @@ export class LotService {
       estado: 'ACTIVO'
     }).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('lotes');
     return data;
   }
 
   async updateLote(id: string, lote: Partial<Lote>): Promise<Lote> {
     const { data, error } = await this.supabase.client.from('lotes').update({ ...lote, updated_at: new Date().toISOString() }).eq('id', id).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('lotes');
     return data;
   }
 
   async deleteLote(id: string): Promise<void> {
     const { error } = await this.supabase.client.from('lotes').delete().eq('id', id);
     if (error) throw error;
+    this.refresh.triggerRefresh('lotes');
   }
 
   async getVacunas(): Promise<Vacuna[]> {
@@ -213,6 +224,7 @@ export class LotService {
       .update({ cantidad_actual: this.supabase.client.rpc('get_cantidad_actual', { lote_id: mortalidad.lote_id }) })
       .eq('id', mortalidad.lote_id);
     
+    this.refresh.triggerRefresh('mortalidad');
     return newMortalidad;
   }
 
@@ -225,6 +237,7 @@ export class LotService {
   async createConsumo(consumo: Partial<ConsumoDiario>): Promise<ConsumoDiario> {
     const { data, error } = await this.supabase.client.from('consumo_diario').insert(consumo).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('consumo');
     return data;
   }
 
@@ -237,6 +250,7 @@ export class LotService {
   async createPesaje(pesaje: Partial<Pesaje>): Promise<Pesaje> {
     const { data, error } = await this.supabase.client.from('pesajes').insert(pesaje).select().single();
     if (error) throw error;
+    this.refresh.triggerRefresh('pesajes');
     return data;
   }
 
