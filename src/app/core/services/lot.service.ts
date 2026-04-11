@@ -91,6 +91,61 @@ export interface Hito {
   created_at?: string;
 }
 
+export interface Cliente {
+  id?: string;
+  nombre: string;
+  telefono?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Venta {
+  id?: string;
+  fecha: string;
+  cliente_id?: string;
+  lote_id?: string;
+  precio_kg: number;
+  total_kg: number;
+  total_bs: number;
+  placa?: string;
+  estado: 'PENDIENTE' | 'CANCELADO' | 'PARCIAL';
+  observaciones?: string;
+  created_at?: string;
+  updated_at?: string;
+  cliente?: Cliente;
+  lote?: Lote;
+  detalle_pesadas?: DetallePesada[];
+  pagos?: Pago[];
+}
+
+export interface DetallePesada {
+  id?: string;
+  venta_id: string;
+  peso_kg: number;
+  cantidad_pollos: number;
+  created_at?: string;
+}
+
+export interface Pago {
+  id?: string;
+  venta_id: string;
+  monto: number;
+  fecha: string;
+  metodo: 'EFECTIVO' | 'TRANSFERENCIA' | 'OTRO';
+  created_at?: string;
+}
+
+export interface FaseAlimento {
+  id?: string;
+  nombre: string;
+  dia_inicio: number;
+  dia_fin: number;
+  toneladas_base: number;
+  precio_tn: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -271,5 +326,157 @@ export class LotService {
     const { data, error } = await this.supabase.client.from('hitos').update(hito).eq('id', id).select().single();
     if (error) throw error;
     return data;
+  }
+
+  async getClientes(): Promise<Cliente[]> {
+    const { data, error } = await this.supabase.client.from('clientes').select('*').order('nombre');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async searchClientes(termino: string): Promise<Cliente[]> {
+    const { data, error } = await this.supabase.client
+      .from('clientes')
+      .select('*')
+      .ilike('nombre', `%${termino}%`)
+      .order('nombre')
+      .limit(10);
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createCliente(cliente: Partial<Cliente>): Promise<Cliente> {
+    const { data, error } = await this.supabase.client.from('clientes').insert(cliente).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateCliente(id: string, cliente: Partial<Cliente>): Promise<Cliente> {
+    const { data, error } = await this.supabase.client.from('clientes').update({ ...cliente, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteCliente(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('clientes').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getVentas(loteId?: string): Promise<Venta[]> {
+    let query = this.supabase.client.from('ventas').select('*, cliente:clientes(*), lote:lotes(*)').order('fecha', { ascending: false });
+    if (loteId) query = query.eq('lote_id', loteId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getVentasPorCliente(clienteId: string): Promise<Venta[]> {
+    const { data, error } = await this.supabase.client
+      .from('ventas')
+      .select('*, lote:lotes(*)')
+      .eq('cliente_id', clienteId)
+      .order('fecha', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createVenta(venta: Partial<Venta>): Promise<Venta> {
+    const { data, error } = await this.supabase.client.from('ventas').insert({
+      ...venta,
+      estado: 'PENDIENTE'
+    }).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateVenta(id: string, venta: Partial<Venta>): Promise<Venta> {
+    const { data, error } = await this.supabase.client.from('ventas').update({ ...venta, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteVenta(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('ventas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async addPesada(ventaId: string, pesoKg: number, cantidadPollos: number = 1): Promise<DetallePesada> {
+    const { data, error } = await this.supabase.client.from('detalle_pesadas').insert({
+      venta_id: ventaId,
+      peso_kg: pesoKg,
+      cantidad_pollos: cantidadPollos
+    }).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updatePesada(id: string, pesoKg: number, cantidadPollos: number): Promise<DetallePesada> {
+    const { data, error } = await this.supabase.client.from('detalle_pesadas').update({
+      peso_kg: pesoKg,
+      cantidad_pollos: cantidadPollos
+    }).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async removePesada(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('detalle_pesadas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getDetallePesadas(ventaId: string): Promise<DetallePesada[]> {
+    const { data, error } = await this.supabase.client.from('detalle_pesadas').select('*').eq('venta_id', ventaId).order('created_at');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getPagos(ventaId: string): Promise<Pago[]> {
+    const { data, error } = await this.supabase.client.from('pagos').select('*').eq('venta_id', ventaId).order('fecha');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createPago(pago: Partial<Pago>): Promise<Pago> {
+    const { data, error } = await this.supabase.client.from('pagos').insert(pago).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async getFasesAlimento(): Promise<FaseAlimento[]> {
+    const { data, error } = await this.supabase.client.from('fases_alimento').select('*').order('dia_inicio');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async updateFaseAlimento(id: string, fase: Partial<FaseAlimento>): Promise<FaseAlimento> {
+    const { data, error } = await this.supabase.client.from('fases_alimento').update({ ...fase, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async getVentasDiarias(fecha?: string): Promise<Venta[]> {
+    const fechaBuscada = fecha || new Date().toISOString().split('T')[0];
+    const { data, error } = await this.supabase.client
+      .from('ventas')
+      .select('*, cliente:clientes(*)')
+      .eq('fecha', fechaBuscada)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getResumenVentas(loteId?: string): Promise<{ total_bs: number; total_kg: number; pendientes: number }> {
+    let query = this.supabase.client.from('ventas').select('total_bs, total_kg, estado');
+    if (loteId) query = query.eq('lote_id', loteId);
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    const resumen = { total_bs: 0, total_kg: 0, pendientes: 0 };
+    (data || []).forEach(v => {
+      resumen.total_bs += v.total_bs || 0;
+      resumen.total_kg += v.total_kg || 0;
+      if (v.estado !== 'CANCELADO') resumen.pendientes += (v.total_bs || 0);
+    });
+    return resumen;
   }
 }

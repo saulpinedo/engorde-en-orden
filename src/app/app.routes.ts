@@ -19,7 +19,12 @@ export const routes: Routes = [
       { path: 'pesajes', loadComponent: () => import('./features/pesajes/pesajes.component').then(m => m.PesajesComponent) },
       { path: 'vacunas', loadComponent: () => import('./features/vacunas/vacunas.component').then(m => m.VacunasComponent) },
       { path: 'formulas', loadComponent: () => import('./features/formulas/formulas.component').then(m => m.FormulasComponent) },
-      { path: 'galpones', loadComponent: () => import('./features/galpones/galpones.component').then(m => m.GalponesComponent) }
+      { path: 'fases-alimento', loadComponent: () => import('./features/fases-alimento/fases-alimento.component').then(m => m.FasesAlimentoComponent) },
+      { path: 'galpones', loadComponent: () => import('./features/galpones/galpones.component').then(m => m.GalponesComponent) },
+      { path: 'clientes', loadComponent: () => import('./features/clientes/clientes.component').then(m => m.ClientesComponent) },
+      { path: 'ventas', loadComponent: () => import('./features/ventas/ventas.component').then(m => m.VentasComponent) },
+      { path: 'ventas/:loteId', loadComponent: () => import('./features/ventas/ventas.component').then(m => m.VentasComponent) },
+      { path: 'pagos', loadComponent: () => import('./features/pagos/pagos.component').then(m => m.PagosComponent) }
     ]
   },
   { path: '**', redirectTo: 'dashboard' }

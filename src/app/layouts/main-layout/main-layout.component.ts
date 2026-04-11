@@ -58,7 +58,7 @@ import { NotificationService, Notification } from '../../core/services/notificat
         <nav class="sidebar-nav">
           @for (item of layoutService.getMenuItems(); track item.routerLink) {
             <a [routerLink]="item.routerLink" routerLinkActive="active" class="nav-item">
-              <span class="nav-icon">{{ getIcon(item.label) }}</span>
+              <span class="nav-icon">{{ item.icon }}</span>
               <span class="nav-label">{{ item.label }}</span>
             </a>
           }

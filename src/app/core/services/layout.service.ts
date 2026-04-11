@@ -22,10 +22,14 @@ export class LayoutService {
       { label: 'Galpones', icon: '📦', routerLink: '/galpones' },
       { label: 'Lotes', icon: '🐣', routerLink: '/lotes' },
       { label: 'Timeline', icon: '📅', routerLink: '/timeline' },
+      { label: 'Ventas', icon: '💰', routerLink: '/ventas' },
+      { label: 'Clientes', icon: '👥', routerLink: '/clientes' },
+      { label: 'Cobrar', icon: '📝', routerLink: '/pagos' },
       { label: 'Vacunas', icon: '💉', routerLink: '/vacunas' },
       { label: 'Mortalidad', icon: '⚠️', routerLink: '/mortalidad' },
       { label: 'Consumo', icon: '🌽', routerLink: '/consumo' },
       { label: 'Pesajes', icon: '⚖️', routerLink: '/pesajes' },
+      { label: 'Fases Alimento', icon: '📊', routerLink: '/fases-alimento' },
       { label: 'Fórmulas', icon: '📋', routerLink: '/formulas' }
     ];
   }
