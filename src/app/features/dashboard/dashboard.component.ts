@@ -50,6 +50,20 @@ import { RefreshService } from '../../core/services/refresh.service';
               <span class="stat-label">Peso Promedio</span>
             </div>
           </div>
+          <div class="stat-card">
+            <div class="stat-icon morado">🧪</div>
+            <div class="stat-content">
+              <span class="stat-value">{{ stats().totalInsumos }}</span>
+              <span class="stat-label">Insumos Registrados</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon verde-claro">💰</div>
+            <div class="stat-content">
+              <span class="stat-value">{{ stats().ventasHoy }}</span>
+              <span class="stat-label">Ventas Hoy</span>
+            </div>
+          </div>
         </div>
         
         <div class="content-grid">
@@ -93,6 +107,8 @@ import { RefreshService } from '../../core/services/refresh.service';
             </div>
             <div class="quick-actions">
               <button class="action-btn" routerLink="/lotes">➕ Nuevo Lote</button>
+              <button class="action-btn" routerLink="/insumos">🧪 Agregar Insumo</button>
+              <button class="action-btn" routerLink="/ventas">💰 Nueva Venta</button>
               <button class="action-btn" routerLink="/mortalidad">💔 Registrar Mortalidad</button>
               <button class="action-btn" routerLink="/consumo">🌽 Registrar Consumo</button>
               <button class="action-btn" routerLink="/pesajes">⚖️ Nuevo Pesaje</button>
@@ -119,6 +135,8 @@ import { RefreshService } from '../../core/services/refresh.service';
     .stat-icon.amarillo { background: #fff3cd; }
     .stat-icon.rojo { background: #f8d7da; }
     .stat-icon.azul { background: #d1ecf1; }
+    .stat-icon.morado { background: #e2d9f3; }
+    .stat-icon.verde-claro { background: #c3faae; }
     .stat-value { font-size: 1.75rem; font-weight: 700; color: #2B2B2B; display: block; }
     .stat-label { color: #666; font-size: 0.875rem; }
     .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
@@ -148,7 +166,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   lotes = signal<Lote[]>([]);
   loading = signal(true);
-  stats = signal({ lotesActivos: 0, totalPollos: 0, mortalidadPromedio: 0, pesoPromedio: 2500 });
+  stats = signal({ lotesActivos: 0, totalPollos: 0, mortalidadPromedio: 0, pesoPromedio: 2500, totalInsumos: 0, ventasHoy: 0 });
 
   async ngOnInit(): Promise<void> {
     await this.loadData();
@@ -161,11 +179,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const lotesData = await this.lotService.getLotes();
       this.lotes.set(lotesData);
       const activos = lotesData.filter(l => l.estado === 'ACTIVO');
+      
+      const [insumosData, ventasData] = await Promise.all([
+        this.lotService.getInsumos(),
+        this.lotService.getVentas()
+      ]);
+      
+      const hoy = new Date().toISOString().split('T')[0];
+      const ventasDelDia = ventasData.filter((v: any) => v.fecha === hoy);
+      
       this.stats.set({
         lotesActivos: activos.length,
         totalPollos: activos.reduce((sum, l) => sum + l.cantidad_actual, 0),
         mortalidadPromedio: 0,
-        pesoPromedio: 2500
+        pesoPromedio: 2500,
+        totalInsumos: insumosData.length,
+        ventasHoy: ventasDelDia.length
       });
     } catch (e) {
       console.error(e);

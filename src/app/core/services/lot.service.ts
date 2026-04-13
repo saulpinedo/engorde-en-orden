@@ -42,8 +42,11 @@ export interface Lote {
 export interface Vacuna {
   id?: string;
   nombre: string;
+  tipo: 'VACUNA' | 'ANTIBIOTICO' | 'VITAMINA' | 'DESINFECTANTE';
   dias_aplicacion?: number;
   descripcion?: string;
+  precio_unitario?: number;
+  unidad?: string;
   created_at?: string;
 }
 
@@ -81,13 +84,71 @@ export interface Pesaje {
 export interface Hito {
   id?: string;
   lote_id: string;
-  tipo: 'VACUNA' | 'PESAJE' | 'ALIMENTO' | 'OTRO';
+  tipo: 'VACUNA' | 'ANTIBIOTICO' | 'VITAMINA' | 'DESINFECTANTE' | 'PESAJE' | 'ALIMENTO' | 'OTRO';
   titulo: string;
   fecha: string;
   estado: 'PENDIENTE' | 'COMPLETADO';
   completado_en?: string;
   realizado_por?: string;
   observaciones?: string;
+  cantidad_aplicada?: number;
+  created_at?: string;
+}
+
+export interface Antibiotico {
+  id?: string;
+  lote_id: string;
+  catalogo_id: string;
+  fecha: string;
+  cantidad: number;
+  notas?: string;
+  created_at?: string;
+}
+
+export interface Vitamina {
+  id?: string;
+  lote_id: string;
+  catalogo_id: string;
+  fecha: string;
+  cantidad: number;
+  notas?: string;
+  created_at?: string;
+}
+
+export interface Desinfectante {
+  id?: string;
+  lote_id: string;
+  catalogo_id: string;
+  fecha: string;
+  cantidad: number;
+  notas?: string;
+  created_at?: string;
+}
+
+export interface AntibioticoCatalogo {
+  id?: string;
+  nombre: string;
+  precio_unitario?: number;
+  unidad?: string;
+  descripcion?: string;
+  created_at?: string;
+}
+
+export interface VitaminaCatalogo {
+  id?: string;
+  nombre: string;
+  precio_unitario?: number;
+  unidad?: string;
+  descripcion?: string;
+  created_at?: string;
+}
+
+export interface DesinfectanteCatalogo {
+  id?: string;
+  nombre: string;
+  precio_unitario?: number;
+  unidad?: string;
+  descripcion?: string;
   created_at?: string;
 }
 
@@ -260,9 +321,137 @@ export class LotService {
   }
 
   async getVacunas(): Promise<Vacuna[]> {
-    const { data, error } = await this.supabase.client.from('vacunas').select('*').order('dias_aplicacion');
+    const { data, error } = await this.supabase.client.from('vacunas').select('*').order('nombre');
     if (error) throw error;
     return data || [];
+  }
+
+  async createVacuna(vacuna: Partial<Vacuna>): Promise<Vacuna> {
+    const { data, error } = await this.supabase.client.from('vacunas').insert(vacuna).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateVacuna(id: string, vacuna: Partial<Vacuna>): Promise<Vacuna> {
+    const { data, error } = await this.supabase.client.from('vacunas').update(vacuna).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteVacuna(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('vacunas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getVacunasAplicadas(loteId?: string): Promise<any[]> {
+    let query = this.supabase.client.from('vacunas_aplicadas').select('*').order('fecha', { ascending: false });
+    if (loteId) query = query.eq('lote_id', loteId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createVacunaAplicada(vacuna: any): Promise<any> {
+    const { data, error } = await this.supabase.client.from('vacunas_aplicadas').insert(vacuna).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteVacunaAplicada(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('vacunas_aplicadas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getInsumos(): Promise<any[]> {
+    const { data, error } = await this.supabase.client.from('insumos').select('*').order('nombre');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createInsumo(insumo: any): Promise<any> {
+    const { data, error } = await this.supabase.client.from('insumos').insert(insumo).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateInsumo(id: string, insumo: any): Promise<any> {
+    const { data, error } = await this.supabase.client.from('insumos').update(insumo).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteInsumo(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('insumos').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getAntibioticosCatalogo(): Promise<AntibioticoCatalogo[]> {
+    const { data, error } = await this.supabase.client.from('antibioticos').select('*').order('nombre');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createAntibioticoCatalogo(insumo: Partial<AntibioticoCatalogo>): Promise<AntibioticoCatalogo> {
+    const { data, error } = await this.supabase.client.from('antibioticos').insert(insumo).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateAntibioticoCatalogo(id: string, insumo: Partial<AntibioticoCatalogo>): Promise<AntibioticoCatalogo> {
+    const { data, error } = await this.supabase.client.from('antibioticos').update(insumo).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteAntibioticoCatalogo(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('antibioticos').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getVitaminasCatalogo(): Promise<VitaminaCatalogo[]> {
+    const { data, error } = await this.supabase.client.from('vitaminas').select('*').order('nombre');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createVitaminaCatalogo(insumo: Partial<VitaminaCatalogo>): Promise<VitaminaCatalogo> {
+    const { data, error } = await this.supabase.client.from('vitaminas').insert(insumo).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateVitaminaCatalogo(id: string, insumo: Partial<VitaminaCatalogo>): Promise<VitaminaCatalogo> {
+    const { data, error } = await this.supabase.client.from('vitaminas').update(insumo).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteVitaminaCatalogo(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('vitaminas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getDesinfectantesCatalogo(): Promise<DesinfectanteCatalogo[]> {
+    const { data, error } = await this.supabase.client.from('desinfectantes').select('*').order('nombre');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createDesinfectanteCatalogo(insumo: Partial<DesinfectanteCatalogo>): Promise<DesinfectanteCatalogo> {
+    const { data, error } = await this.supabase.client.from('desinfectantes').insert(insumo).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateDesinfectanteCatalogo(id: string, insumo: Partial<DesinfectanteCatalogo>): Promise<DesinfectanteCatalogo> {
+    const { data, error } = await this.supabase.client.from('desinfectantes').update(insumo).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteDesinfectanteCatalogo(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('desinfectantes').delete().eq('id', id);
+    if (error) throw error;
   }
 
   async getMortalidades(loteId: string): Promise<Mortalidad[]> {
@@ -326,6 +515,63 @@ export class LotService {
     const { data, error } = await this.supabase.client.from('hitos').update(hito).eq('id', id).select().single();
     if (error) throw error;
     return data;
+  }
+
+  async getAntibioticos(loteId?: string): Promise<Antibiotico[]> {
+    let query = this.supabase.client.from('antibiotico_aplicadas').select('*').order('fecha', { ascending: false });
+    if (loteId) query = query.eq('lote_id', loteId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createAntibiotico(antibiotico: Partial<Antibiotico>): Promise<Antibiotico> {
+    const { data, error } = await this.supabase.client.from('antibiotico_aplicadas').insert(antibiotico).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteAntibiotico(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('antibiotico_aplicadas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getVitaminas(loteId?: string): Promise<Vitamina[]> {
+    let query = this.supabase.client.from('vitamina_aplicadas').select('*').order('fecha', { ascending: false });
+    if (loteId) query = query.eq('lote_id', loteId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createVitamina(vitamina: Partial<Vitamina>): Promise<Vitamina> {
+    const { data, error } = await this.supabase.client.from('vitamina_aplicadas').insert(vitamina).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteVitamina(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('vitamina_aplicadas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async getDesinfectantes(loteId?: string): Promise<Desinfectante[]> {
+    let query = this.supabase.client.from('desinfectante_aplicadas').select('*').order('fecha', { ascending: false });
+    if (loteId) query = query.eq('lote_id', loteId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createDesinfectante(desinfectante: Partial<Desinfectante>): Promise<Desinfectante> {
+    const { data, error } = await this.supabase.client.from('desinfectante_aplicadas').insert(desinfectante).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteDesinfectante(id: string): Promise<void> {
+    const { error } = await this.supabase.client.from('desinfectante_aplicadas').delete().eq('id', id);
+    if (error) throw error;
   }
 
   async getClientes(): Promise<Cliente[]> {

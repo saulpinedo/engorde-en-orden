@@ -20,40 +20,61 @@ import { format } from 'date-fns';
         <button class="btn-primary" (click)="openDialog()">➕ Nuevo Lote</button>
       </div>
       
-      <div class="card">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Lote</th>
-              <th>Granja/Galpón</th>
-              <th>Raza</th>
-              <th>Días</th>
-              <th>Etapa</th>
-              <th>Cantidad</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (lote of lotes(); track lote.id) {
-              <tr>
-                <td><strong>{{ lote.nombre || 'Lote ' + lote.id?.slice(0,4) }}</strong></td>
-                <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
-                <td>{{ lote.raza }}</td>
-                <td>{{ getDiasVida(lote) }}</td>
-                <td><span class="tag" [class]="'tag-' + lote.etapa_actual.toLowerCase()">{{ lote.etapa_actual }}</span></td>
-                <td>{{ lote.cantidad_actual | number }} / {{ lote.cantidad_inicial | number }}</td>
-                <td>
-                  <button class="btn-icon" (click)="goToTimeline(lote)">📅</button>
-                  <button class="btn-icon" (click)="editLote(lote)">✏️</button>
-                </td>
-              </tr>
-            }
-            @empty {
-              <tr><td colspan="7" class="text-center">No hay lotes registrados</td></tr>
-            }
-          </tbody>
-        </table>
+      <div class="tabs">
+        <button class="tab-btn" [class.active]="tabActual() === 'activos'" (click)="setTab('activos')">
+          Activos ({{ lotesActivos().length }})
+        </button>
+        <button class="tab-btn" [class.active]="tabActual() === 'finalizados'" (click)="setTab('finalizados')">
+          Finalizados ({{ lotesFinalizados().length }})
+        </button>
       </div>
+      
+      @if (loading()) {
+        <div class="loading">Cargando...</div>
+      } @else {
+        <div class="card">
+          @if (tabActual() === 'activos' ? lotesActivos().length > 0 : lotesFinalizados().length > 0) {
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th>Granja/Galpón</th>
+                  <th>Raza</th>
+                  <th>Días</th>
+                  <th>Etapa</th>
+                  <th>Cantidad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (lote of (tabActual() === 'activos' ? lotesActivos() : lotesFinalizados()); track lote.id) {
+                  <tr>
+                    <td>
+                      <strong>{{ lote.nombre || 'Lote ' + lote.id?.slice(0,4) }}</strong>
+                      @if (lote.estado === 'FINALIZADO') {
+                        <span class="badge-finalizado">FINALIZADO</span>
+                      }
+                    </td>
+                    <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
+                    <td>{{ lote.raza }}</td>
+                    <td>{{ getDiasVida(lote) }}</td>
+                    <td><span class="tag" [class]="'tag-' + lote.etapa_actual.toLowerCase()">{{ lote.etapa_actual }}</span></td>
+                    <td>{{ lote.cantidad_actual | number }} / {{ lote.cantidad_inicial | number }}</td>
+                    <td>
+                      <button class="btn-icon" (click)="goToTimeline(lote)" title="Ver Timeline">📅</button>
+                      <button class="btn-icon" (click)="editLote(lote)" title="Editar">✏️</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="empty-state">
+              <p>{{ tabActual() === 'activos' ? 'No hay lotes activos' : 'No hay lotes finalizados' }}</p>
+            </div>
+          }
+        </div>
+      }
       
       @if (dialogVisible()) {
         <div class="modal-overlay" (click)="dialogVisible.set(false)">
@@ -117,6 +138,16 @@ import { format } from 'date-fns';
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .page-header h1 { margin: 0; color: #2B2B2B; }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
+    
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .tab-btn { flex: 1; padding: 0.75rem; background: white; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .tab-btn:hover { border-color: #FFC107; }
+    .tab-btn.active { background: #FFC107; border-color: #FFC107; color: #2B2B2B; }
+    
+    .badge-finalizado { display: inline-block; background: #6c757d; color: white; font-size: 0.65rem; padding: 0.125rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; }
+    .loading { text-align: center; padding: 3rem; color: #666; }
+    .empty-state { text-align: center; padding: 3rem; color: #666; }
+    
     .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
     .data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; }
@@ -146,7 +177,12 @@ export class LotesComponent implements OnInit {
   private refreshSub: any;
   private router = inject(Router);
   
+  loading = signal(true);
+  tabActual = signal<'activos' | 'finalizados'>('activos');
+  
   lotes = signal<Lote[]>([]);
+  lotesActivos = signal<Lote[]>([]);
+  lotesFinalizados = signal<Lote[]>([]);
   granjas = signal<Granja[]>([]);
   galpones = signal<Galpon[]>([]);
   galponesFiltrados = signal<Galpon[]>([]);
@@ -163,15 +199,23 @@ export class LotesComponent implements OnInit {
     this.refreshSub = this.refresh.refresh$.subscribe(() => this.loadData());
   }
 
+  setTab(tab: 'activos' | 'finalizados'): void {
+    this.tabActual.set(tab);
+  }
+
   async loadData(): Promise<void> {
+    this.loading.set(true);
     const [lotesData, granjasData, galponesData] = await Promise.all([
       this.lotService.getLotes(),
       this.lotService.getGranjas(),
       this.lotService.getGalpones()
     ]);
     this.lotes.set(lotesData);
+    this.lotesActivos.set(lotesData.filter(l => l.estado === 'ACTIVO'));
+    this.lotesFinalizados.set(lotesData.filter(l => l.estado === 'FINALIZADO'));
     this.granjas.set(granjasData);
     this.galpones.set(galponesData);
+    this.loading.set(false);
   }
 
   onGranjaChange(): void {

@@ -95,6 +95,21 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
                 <span class="filter-dot dot-vacuna"></span>
                 Vacunas
               </label>
+              <label class="filter-item">
+                <input type="checkbox" [(ngModel)]="showAntibiotico" (change)="updateFilters()"/>
+                <span class="filter-dot dot-antibiotico"></span>
+                Antibióticos
+              </label>
+              <label class="filter-item">
+                <input type="checkbox" [(ngModel)]="showVitamina" (change)="updateFilters()"/>
+                <span class="filter-dot dot-vitamina"></span>
+                Vitaminas
+              </label>
+              <label class="filter-item">
+                <input type="checkbox" [(ngModel)]="showDesinfectante" (change)="updateFilters()"/>
+                <span class="filter-dot dot-desinfectante"></span>
+                Desinfectantes
+              </label>
             </div>
 
             <div class="sidebar-section">
@@ -189,6 +204,18 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
                   <span class="icon">💉</span>
                   <span>Vacuna</span>
                 </button>
+                <button class="event-type-btn" (click)="setModalMode('antibiotico')">
+                  <span class="icon">💊</span>
+                  <span>Antibiótico</span>
+                </button>
+                <button class="event-type-btn" (click)="setModalMode('vitamina')">
+                  <span class="icon">🌿</span>
+                  <span>Vitamina</span>
+                </button>
+                <button class="event-type-btn" (click)="setModalMode('desinfectante')">
+                  <span class="icon">🧴</span>
+                  <span>Desinfectante</span>
+                </button>
               </div>
             } @else {
               <div class="form-grid">
@@ -210,6 +237,24 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
                 @if (modalMode() === 'vacuna') {
                   <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
                   <div class="form-group"><label>Vacuna</label><select [(ngModel)]="form.vacuna_id" class="input-field"><option value="">Seleccionar</option>@for (v of vacunas(); track v.id) { <option [value]="v.id">{{ v.nombre }}</option> }</select></div>
+                  <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
+                }
+                @if (modalMode() === 'antibiotico') {
+                  <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
+                  <div class="form-group"><label>Antibiótico</label><select [(ngModel)]="form.catalogo_id" class="input-field"><option value="">Seleccionar</option>@for (a of antibioticos(); track a.id) { <option [value]="a.id">{{ a.nombre }} ({{ a.unidad }})</option> }</select></div>
+                  <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" step="0.1" min="0" class="input-field"/></div>
+                  <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
+                }
+                @if (modalMode() === 'vitamina') {
+                  <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
+                  <div class="form-group"><label>Vitamina</label><select [(ngModel)]="form.catalogo_id" class="input-field"><option value="">Seleccionar</option>@for (v of vitaminas(); track v.id) { <option [value]="v.id">{{ v.nombre }} ({{ v.unidad }})</option> }</select></div>
+                  <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" step="0.1" min="0" class="input-field"/></div>
+                  <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
+                }
+                @if (modalMode() === 'desinfectante') {
+                  <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
+                  <div class="form-group"><label>Desinfectante</label><select [(ngModel)]="form.catalogo_id" class="input-field"><option value="">Seleccionar</option>@for (d of desinfectantes(); track d.id) { <option [value]="d.id">{{ d.nombre }} ({{ d.unidad }})</option> }</select></div>
+                  <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" step="0.1" min="0" class="input-field"/></div>
                   <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
                 }
               </div>
@@ -258,6 +303,9 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
     .dot-consumo { background: #28a745; }
     .dot-pesaje { background: #17a2b8; }
     .dot-vacuna { background: #6f42c1; }
+    .dot-antibiotico { background: #dc3545; }
+    .dot-vitamina { background: #28a745; }
+    .dot-desinfectante { background: #0dcaf0; }
     
     .etapa-indicator { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; font-size: 0.8rem; }
     .etapa-color { width: 16px; height: 16px; border-radius: 4px; }
@@ -329,6 +377,9 @@ export class TimelineComponent implements OnInit, OnDestroy {
   diasVida = signal(0);
   mortalidad = signal(0);
   vacunas = signal<Vacuna[]>([]);
+  antibioticos = signal<any[]>([]);
+  vitaminas = signal<any[]>([]);
+  desinfectantes = signal<any[]>([]);
   
   vistaEtapa = signal<'auto' | 'strip' | 'ninguna'>('strip');
   currentViewDate = signal<Date>(new Date());
@@ -337,9 +388,12 @@ export class TimelineComponent implements OnInit, OnDestroy {
   showConsumo = true;
   showPesaje = true;
   showVacuna = true;
+  showAntibiotico = true;
+  showVitamina = true;
+  showDesinfectante = true;
   
   modalVisible = signal(false);
-  modalMode = signal<'select' | 'mortalidad' | 'consumo' | 'pesaje' | 'vacuna'>('select');
+  modalMode = signal<'select' | 'mortalidad' | 'consumo' | 'pesaje' | 'vacuna' | 'antibiotico' | 'vitamina' | 'desinfectante'>('select');
   selectedDate = signal<Date | null>(null);
   form: any = {};
   isEditing = signal(false);
@@ -349,7 +403,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
   mortalidadesCache: Mortalidad[] = [];
   consumosCache: ConsumoDiario[] = [];
   pesajesCache: Pesaje[] = [];
-  hitosCache: Hito[] = [];
+  vacunasAplicadasCache: any[] = [];
+  antibioticosAplicadosCache: any[] = [];
+  vitaminasAplicadasCache: any[] = [];
+  desinfectantesAplicadosCache: any[] = [];
 
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
@@ -393,9 +450,12 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     try {
       console.log('Loading lote:', id);
-      const [loteData, vacunasData] = await Promise.all([
+      const [loteData, vacunasData, antibioticosData, vitaminasData, desinfectantesData] = await Promise.all([
         this.lotService.getLote(id),
-        this.lotService.getVacunas()
+        this.lotService.getVacunas(),
+        this.lotService.getAntibioticosCatalogo(),
+        this.lotService.getVitaminasCatalogo(),
+        this.lotService.getDesinfectantesCatalogo()
       ]);
       
       console.log('Lote data:', loteData);
@@ -418,6 +478,9 @@ export class TimelineComponent implements OnInit, OnDestroy {
         };
         
         this.vacunas.set(vacunasData);
+        this.antibioticos.set(antibioticosData);
+        this.vitaminas.set(vitaminasData);
+        this.desinfectantes.set(desinfectantesData);
       } else {
         console.warn('No loteData returned for id:', id);
       }
@@ -434,7 +497,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
     this.mortalidadesCache = await this.lotService.getMortalidades(lote.id!);
     this.consumosCache = await this.lotService.getConsumos(lote.id!);
     this.pesajesCache = await this.lotService.getPesajes(lote.id!);
-    this.hitosCache = await this.lotService.getHitos(lote.id!);
+    this.vacunasAplicadasCache = await this.lotService.getVacunasAplicadas(lote.id!);
+    this.antibioticosAplicadosCache = await this.lotService.getAntibioticos(lote.id!);
+    this.vitaminasAplicadasCache = await this.lotService.getVitaminas(lote.id!);
+    this.desinfectantesAplicadosCache = await this.lotService.getDesinfectantes(lote.id!);
     
     if (this.showMortalidad) {
       this.mortalidadesCache.forEach(m => {
@@ -478,14 +544,57 @@ export class TimelineComponent implements OnInit, OnDestroy {
     }
     
     if (this.showVacuna) {
-      this.hitosCache.filter(h => h.tipo === 'VACUNA').forEach(h => {
+      this.vacunasAplicadasCache.forEach(h => {
+        const cat = this.vacunas().find(v => v.id === h.catalogo_vacuna_id);
         events.push({
-          id: `v-${h.id}`,
-          title: `💉 ${h.titulo}`,
+          id: `va-${h.id}`,
+          title: `💉 ${cat?.nombre || 'Vacuna'}`,
           start: h.fecha,
           backgroundColor: '#6f42c1',
           borderColor: '#6f42c1',
-          extendedProps: { tipo: 'vacuna', titulo: h.titulo, notas: h.observaciones, originalId: h.id }
+          extendedProps: { tipo: 'vacuna', titulo: cat?.nombre || 'Vacuna', notas: h.notas, originalId: h.id }
+        });
+      });
+    }
+    
+    if (this.showAntibiotico) {
+      this.antibioticosAplicadosCache.forEach(h => {
+        const cat = this.antibioticos().find(a => a.id === h.catalogo_id);
+        events.push({
+          id: `ab-${h.id}`,
+          title: `💊 ${cat?.nombre || 'Antibiótico'}`,
+          start: h.fecha,
+          backgroundColor: '#dc3545',
+          borderColor: '#dc3545',
+          extendedProps: { tipo: 'antibiotico', titulo: cat?.nombre || 'Antibiótico', cantidad: h.cantidad, notas: h.notas, originalId: h.id }
+        });
+      });
+    }
+    
+    if (this.showVitamina) {
+      this.vitaminasAplicadasCache.forEach(h => {
+        const cat = this.vitaminas().find(v => v.id === h.catalogo_id);
+        events.push({
+          id: `vt-${h.id}`,
+          title: `🌿 ${cat?.nombre || 'Vitamina'}`,
+          start: h.fecha,
+          backgroundColor: '#28a745',
+          borderColor: '#28a745',
+          extendedProps: { tipo: 'vitamina', titulo: cat?.nombre || 'Vitamina', cantidad: h.cantidad, notas: h.notas, originalId: h.id }
+        });
+      });
+    }
+    
+    if (this.showDesinfectante) {
+      this.desinfectantesAplicadosCache.forEach(h => {
+        const cat = this.desinfectantes().find(d => d.id === h.catalogo_id);
+        events.push({
+          id: `ds-${h.id}`,
+          title: `🧴 ${cat?.nombre || 'Desinfectante'}`,
+          start: h.fecha,
+          backgroundColor: '#0dcaf0',
+          borderColor: '#0dcaf0',
+          extendedProps: { tipo: 'desinfectante', titulo: cat?.nombre || 'Desinfectante', cantidad: h.cantidad, notas: h.notas, originalId: h.id }
         });
       });
     }
@@ -654,6 +763,18 @@ export class TimelineComponent implements OnInit, OnDestroy {
         const vacuna = this.vacunas().find(v => v.nombre === props.titulo);
         this.form = { fecha: event.startStr, vacuna_id: vacuna?.id || '', notas: props.notas || '' };
         break;
+      case 'antibiotico':
+        const antib = this.antibioticos().find(a => a.nombre === props.titulo);
+        this.form = { fecha: event.startStr, catalogo_id: antib?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
+        break;
+      case 'vitamina':
+        const vit = this.vitaminas().find(v => v.nombre === props.titulo);
+        this.form = { fecha: event.startStr, catalogo_id: vit?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
+        break;
+      case 'desinfectante':
+        const des = this.desinfectantes().find(d => d.nombre === props.titulo);
+        this.form = { fecha: event.startStr, catalogo_id: des?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
+        break;
     }
     
     this.modalVisible.set(true);
@@ -668,16 +789,22 @@ export class TimelineComponent implements OnInit, OnDestroy {
       case 'consumo': return `${prefix}🌽 Consumo - ${dateStr}`;
       case 'pesaje': return `${prefix}⚖️ Pesaje - ${dateStr}`;
       case 'vacuna': return `${prefix}💉 Vacuna - ${dateStr}`;
+      case 'antibiotico': return `${prefix}💊 Antibiótico - ${dateStr}`;
+      case 'vitamina': return `${prefix}🌿 Vitamina - ${dateStr}`;
+      case 'desinfectante': return `${prefix}🧴 Desinfectante - ${dateStr}`;
       default: return this.isEditing() ? 'Editar Evento' : 'Registrar Evento';
     }
   }
 
-  setModalMode(mode: 'select' | 'mortalidad' | 'consumo' | 'pesaje' | 'vacuna'): void {
+  setModalMode(mode: 'select' | 'mortalidad' | 'consumo' | 'pesaje' | 'vacuna' | 'antibiotico' | 'vitamina' | 'desinfectante'): void {
     this.modalMode.set(mode);
     if (mode === 'mortalidad') this.form = { cantidad: 1, causa: '' };
     if (mode === 'consumo') this.form = { cantidad_kg: 0 };
     if (mode === 'pesaje') this.form = { muestra: 10 };
     if (mode === 'vacuna') this.form = { notas: '' };
+    if (mode === 'antibiotico') this.form = { cantidad: 0, notas: '' };
+    if (mode === 'vitamina') this.form = { cantidad: 0, notas: '' };
+    if (mode === 'desinfectante') this.form = { cantidad: 0, notas: '' };
   }
 
   closeModal(): void {
@@ -712,10 +839,31 @@ export class TimelineComponent implements OnInit, OnDestroy {
           else { await this.lotService.createPesaje({ lote_id: currentLote.id!, fecha, peso_promedio: this.form.peso_promedio, muestra: this.form.muestra || 10 }); }
           break;
         case 'vacuna':
-          if (!this.form.vacuna_id) { alert('Selecciona una vacuna'); return; }
+          if (!this.form.vacuna_id) { alert('Selecciona una疫苗'); return; }
           const vacuna = this.vacunas().find(v => v.id === this.form.vacuna_id);
-          if (editingId) { await this.supabaseUpdate('hitos', editingId, { fecha, observaciones: this.form.notas }); }
-          else { await this.lotService.createHito({ lote_id: currentLote.id!, tipo: 'VACUNA', titulo: vacuna?.nombre || 'Vacuna', fecha, estado: 'COMPLETADO', observaciones: this.form.notas }); }
+          if (editingId) { await this.supabaseUpdate('vacunas_aplicadas', editingId, { fecha: this.form.fecha, notas: this.form.notas }); }
+          else { await this.lotService.createVacunaAplicada({ lote_id: currentLote.id!, catalogo_vacuna_id: this.form.vacuna_id, fecha, notas: this.form.notas }); }
+          break;
+        case 'antibiotico':
+          if (!this.form.catalogo_id) { alert('Selecciona un antibiótico'); return; }
+          if (!this.form.cantidad || this.form.cantidad <= 0) { alert('Cantidad inválida'); return; }
+          const antib = this.antibioticos().find(a => a.id === this.form.catalogo_id);
+          if (editingId) { await this.supabaseUpdate('antibiotico_aplicadas', editingId, { cantidad: this.form.cantidad, notas: this.form.notas }); }
+          else { await this.lotService.createAntibiotico({ lote_id: currentLote.id!, catalogo_id: this.form.catalogo_id, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          break;
+        case 'vitamina':
+          if (!this.form.catalogo_id) { alert('Selecciona una vitamina'); return; }
+          if (!this.form.cantidad || this.form.cantidad <= 0) { alert('Cantidad inválida'); return; }
+          const vit = this.vitaminas().find(v => v.id === this.form.catalogo_id);
+          if (editingId) { await this.supabaseUpdate('vitamina_aplicadas', editingId, { cantidad: this.form.cantidad, notas: this.form.notas }); }
+          else { await this.lotService.createVitamina({ lote_id: currentLote.id!, catalogo_id: this.form.catalogo_id, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          break;
+        case 'desinfectante':
+          if (!this.form.catalogo_id) { alert('Selecciona un desinfectante'); return; }
+          if (!this.form.cantidad || this.form.cantidad <= 0) { alert('Cantidad inválida'); return; }
+          const des = this.desinfectantes().find(d => d.id === this.form.catalogo_id);
+          if (editingId) { await this.supabaseUpdate('desinfectante_aplicadas', editingId, { cantidad: this.form.cantidad, notas: this.form.notas }); }
+          else { await this.lotService.createDesinfectante({ lote_id: currentLote.id!, catalogo_id: this.form.catalogo_id, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
           break;
       }
       
@@ -733,7 +881,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     if (!confirm('¿Eliminar este registro?')) return;
 
     try {
-      const tableMap: any = { mortalidad: 'mortalidades', consumo: 'consumo_diario', pesaje: 'pesajes', vacuna: 'hitos' };
+      const tableMap: any = { mortalidad: 'mortalidades', consumo: 'consumo_diario', pesaje: 'pesajes', vaccine: 'vaccunas_aplicadas', antibiotico: 'antibiotico_aplicadas', vitamina: 'vitamina_aplicadas', disinfectante: 'desinfectante_aplicadas' };
       await this.supabaseDelete(tableMap[tipo], editingId);
       this.closeModal();
       const currentLote = this.lote();
