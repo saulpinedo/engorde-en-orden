@@ -21,7 +21,7 @@ import { LotService, DesinfectanteCatalogo } from '../../core/services/lot.servi
             @for (c of catalog(); track c.id) {
               <tr>
                 <td><strong>{{ c.nombre }}</strong></td>
-                <td>{{ c.precio_unitario ? c.precio_unitario + ' Bs' : '-' }}</td>
+                <td>{{ c.precioUnitario ? c.precioUnitario + ' Bs' : '-' }}</td>
                 <td>{{ c.unidad || '-' }}</td>
                 <td>
                   <button class="btn-icon" (click)="edit(c)" title="Editar">✏️</button>
@@ -40,7 +40,7 @@ import { LotService, DesinfectanteCatalogo } from '../../core/services/lot.servi
             <h3>{{ editing() ? 'Editar' : 'Nuevo Desinfectante' }}</h3>
             <div class="form-group"><label>Nombre</label><input type="text" [(ngModel)]="form.nombre" class="input-field"/></div>
             <div class="form-row">
-              <div class="form-group"><label>Precio (Bs)</label><input type="number" [(ngModel)]="form.precio_unitario" step="0.01" class="input-field"/></div>
+              <div class="form-group"><label>Precio (Bs)</label><input type="number" [(ngModel)]="form.precioUnitario" step="0.01" class="input-field"/></div>
               <div class="form-group"><label>Unidad</label><select [(ngModel)]="form.unidad" class="input-field"><option value="Lt">Litros</option><option value="ml">ml</option><option value="kg">Kg</option><option value="und">Unidad</option></select></div>
             </div>
             <div class="form-group"><label>Descripción</label><input type="text" [(ngModel)]="form.descripcion" class="input-field"/></div>

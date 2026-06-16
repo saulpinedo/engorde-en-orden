@@ -68,7 +68,7 @@ import { format, subDays } from 'date-fns';
                     <div class="venta-detail">
                       <div class="detail-row">
                         <span>Total venta:</span>
-                        <strong>{{ venta.total_bs | number:'1.2-2' }} Bs</strong>
+                        <strong>{{ venta.totalBs | number:'1.2-2' }} Bs</strong>
                       </div>
                       <div class="detail-row">
                         <span>Pagado:</span>
@@ -80,11 +80,11 @@ import { format, subDays } from 'date-fns';
                       </div>
                       <div class="detail-row">
                         <span>Peso total:</span>
-                        <strong>{{ venta.total_kg | number:'1.1-1' }} kg</strong>
+                        <strong>{{ venta.totalKg | number:'1.1-1' }} kg</strong>
                       </div>
                       <div class="detail-row">
                         <span>Precio/kg:</span>
-                        <strong>{{ venta.precio_kg }} Bs</strong>
+                        <strong>{{ venta.precioKg }} Bs</strong>
                       </div>
                       
                       @if (venta.observaciones) {
@@ -161,7 +161,7 @@ import { format, subDays } from 'date-fns';
                       @if (venta.placa) { <p class="venta-placa">🚗 {{ venta.placa }}</p> }
                     </div>
                     <div class="venta-monto">
-                      <span class="total">{{ venta.total_bs | number:'1.2-2' }} Bs</span>
+                      <span class="total">{{ venta.totalBs | number:'1.2-2' }} Bs</span>
                       <span class="badge cancelado">✓ Cancelado</span>
                       <span class="toggle">{{ isExpanded(venta.id!) ? '▲' : '▼' }}</span>
                     </div>
@@ -171,11 +171,11 @@ import { format, subDays } from 'date-fns';
                     <div class="venta-detail">
                       <div class="detail-row">
                         <span>Peso total:</span>
-                        <strong>{{ venta.total_kg | number:'1.1-1' }} kg</strong>
+                        <strong>{{ venta.totalKg | number:'1.1-1' }} kg</strong>
                       </div>
                       <div class="detail-row">
                         <span>Precio/kg:</span>
-                        <strong>{{ venta.precio_kg }} Bs</strong>
+                        <strong>{{ venta.precioKg }} Bs</strong>
                       </div>
                       
                       @if (venta.observaciones) {
@@ -329,7 +329,7 @@ export class PagosComponent implements OnInit {
       
       pendientes.forEach(v => {
         if (v.id) {
-          const saldo = this.calculateSaldo(v, pagos.filter(p => p.venta_id === v.id));
+          const saldo = this.calculateSaldo(v, pagos.filter(p => p.ventaId === v.id));
           this.abonoMonto[v.id] = saldo;
           this.abonoMetodo[v.id] = 'EFECTIVO';
         }
@@ -352,7 +352,7 @@ export class PagosComponent implements OnInit {
 
   private calculateSaldo(venta: Venta, pagosVenta: Pago[]): number {
     const totalPagado = pagosVenta.reduce((sum, p) => sum + p.monto, 0);
-    return venta.total_bs - totalPagado;
+    return venta.totalBs - totalPagado;
   }
 
   formatDate(fecha: string): string {
@@ -373,11 +373,11 @@ export class PagosComponent implements OnInit {
   }
 
   getTotalCobrado(): number {
-    return this.ventasCanceladas().reduce((sum, v) => sum + v.total_bs, 0);
+    return this.ventasCanceladas().reduce((sum, v) => sum + v.totalBs, 0);
   }
 
   getPagosVenta(ventaId: string): Pago[] {
-    return this.todosLosPagos().filter(p => p.venta_id === ventaId);
+    return this.todosLosPagos().filter(p => p.ventaId === ventaId);
   }
 
   getTotalPagado(venta: Venta): number {
@@ -388,7 +388,7 @@ export class PagosComponent implements OnInit {
   getSaldo(venta: Venta): number {
     const pagos = this.getPagosVenta(venta.id!);
     const totalPagado = pagos.reduce((sum, p) => sum + p.monto, 0);
-    return venta.total_bs - totalPagado;
+    return venta.totalBs - totalPagado;
   }
 
   isExpanded(ventaId: string): boolean {
@@ -425,7 +425,7 @@ export class PagosComponent implements OnInit {
 
     try {
       await this.lotService.createPago({
-        venta_id: venta.id!,
+        ventaId: venta.id!,
         monto,
         fecha: format(new Date(), 'yyyy-MM-dd'),
         metodo

@@ -38,7 +38,7 @@ import { LotService, Granja, Galpon } from '../../core/services/lot.service';
             <h3>{{ editingGalpon() ? 'Editar Galpón' : 'Nuevo Galpón' }}</h3>
             <div class="form-group">
               <label>Granja</label>
-              <select [(ngModel)]="form.granja_id" class="input-field">
+              <select [(ngModel)]="form.granjaId" class="input-field">
                 <option value="">Seleccionar</option>
                 @for (g of granjas(); track g.id) {
                   <option [value]="g.id">{{ g.nombre }}</option>
@@ -118,16 +118,16 @@ export class GalponesComponent implements OnInit {
 
   editGalpon(galpon: Galpon): void {
     this.editingGalpon.set(galpon);
-    this.form = { ...galpon, granja_id: galpon.granja_id };
+    this.form = { ...galpon, granjaId: galpon.granjaId };
     this.dialogVisible.set(true);
   }
 
   async save(): Promise<void> {
-    if (!this.form.granja_id || !this.form.nombre) { alert('Completa los campos'); return; }
-    
+    if (!this.form.granjaId || !this.form.nombre) { alert('Completa los campos'); return; }
+
     const dataToSave = {
       nombre: this.form.nombre,
-      granja_id: this.form.granja_id,
+      granjaId: this.form.granjaId,
       capacidad: this.form.capacidad || null
     };
     

@@ -1,7 +1,12 @@
 export const environment = {
   production: true,
-  supabase: {
-    url: 'https://snhoosqbpntypnqfbnbb.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuaG9vc3FicG50eXBucWZibmJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MTkzODEsImV4cCI6MjA5MDk5NTM4MX0.FCznMDVbXr1FRBCwN2MrHpk2UYjqUd5Oc8ygw0xoqRw'
+  firebase: {
+    apiKey: "AIzaSyDLU99iiB3rs9htaTjJGxi5zBwXCQWqK4s",
+    authDomain: "engorde-en-orden-c7c5c.firebaseapp.com",
+    projectId: "engorde-en-orden-c7c5c",
+    storageBucket: "engorde-en-orden-c7c5c.firebasestorage.app",
+    messagingSenderId: "746754912730",
+    appId: "1:746754912730:web:9ca8de3df124d572a850e3",
+    measurementId: "G-N3ZTVNN46C"
   }
 };

@@ -89,8 +89,8 @@ import { RefreshService } from '../../core/services/refresh.service';
                     <td><strong>{{ lote.nombre || 'Lote ' + lote.id?.slice(0,4) }}</strong></td>
                     <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
                     <td>{{ getDiasVida(lote) }}</td>
-                    <td><span class="tag" [class]="'tag-' + lote.etapa_actual.toLowerCase()">{{ lote.etapa_actual }}</span></td>
-                    <td>{{ lote.cantidad_actual | number }}</td>
+                    <td><span class="tag" [class]="'tag-' + lote.etapaActual.toLowerCase()">{{ lote.etapaActual }}</span></td>
+                    <td>{{ lote.cantidadActual | number }}</td>
                     <td><span class="badge-success">ACTIVO</span></td>
                   </tr>
                 }
@@ -190,7 +190,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       
       this.stats.set({
         lotesActivos: activos.length,
-        totalPollos: activos.reduce((sum, l) => sum + l.cantidad_actual, 0),
+        totalPollos: activos.reduce((sum, l) => sum + l.cantidadActual, 0),
         mortalidadPromedio: 0,
         pesoPromedio: 2500,
         totalInsumos: insumosData.length,
@@ -208,6 +208,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getDiasVida(lote: Lote): number {
-    return this.lotService.getDiasVida(lote.fecha_inicio);
+    return this.lotService.getDiasVida(lote.fechaInicio);
   }
 }

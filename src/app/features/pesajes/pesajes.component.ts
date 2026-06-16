@@ -19,7 +19,7 @@ import { RefreshService } from '../../core/services/refresh.service';
           <thead><tr><th>Fecha</th><th>Lote</th><th>Días</th><th>Peso Promedio</th><th>Muestra</th></tr></thead>
           <tbody>
             @for (reg of registros(); track reg.id) {
-              <tr><td>{{ reg.fecha | date:'dd/MM/yyyy' }}</td><td>{{ reg.lote?.nombre || 'Lote' }}</td><td>{{ getDiasVida(reg) }}</td><td><strong>{{ reg.peso_promedio }}g</strong></td><td>{{ reg.muestra }}</td></tr>
+              <tr><td>{{ reg.fecha | date:'dd/MM/yyyy' }}</td><td>{{ reg.lote?.nombre || 'Lote' }}</td><td>{{ getDiasVida(reg) }}</td><td><strong>{{ reg.pesoPromedio }}g</strong></td><td>{{ reg.muestra }}</td></tr>
             }
             @empty { <tr><td colspan="5" class="text-center">No hay registros</td></tr> }
           </tbody>
@@ -29,9 +29,9 @@ import { RefreshService } from '../../core/services/refresh.service';
         <div class="modal-overlay" (click)="dialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Registrar Pesaje</h3>
-            <div class="form-group"><label>Lote</label><select [(ngModel)]="form.lote_id" class="input-field"><option value="">Seleccionar</option>@for (l of lotes(); track l.id) { <option [value]="l.id">{{ l.nombre || 'Lote ' + l.id?.slice(0,4) }}</option> }</select></div>
+            <div class="form-group"><label>Lote</label><select [(ngModel)]="form.loteId" class="input-field"><option value="">Seleccionar</option>@for (l of lotes(); track l.id) { <option [value]="l.id">{{ l.nombre || 'Lote ' + l.id?.slice(0,4) }}</option> }</select></div>
             <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
-            <div class="form-group"><label>Peso Promedio (g)</label><input type="number" [(ngModel)]="form.peso_promedio" step="10" class="input-field"/></div>
+            <div class="form-group"><label>Peso Promedio (g)</label><input type="number" [(ngModel)]="form.pesoPromedio" step="10" class="input-field"/></div>
             <div class="form-group"><label>Muestra</label><input type="number" [(ngModel)]="form.muestra" min="1" value="10" class="input-field"/></div>
             <div class="modal-actions"><button class="btn-secondary" (click)="dialogVisible.set(false)">Cancelar</button><button class="btn-primary" (click)="save()">Guardar</button></div>
           </div>
@@ -73,8 +73,8 @@ export class PesajesComponent implements OnInit, OnDestroy {
   }
 
   getDiasVida(reg: any): number {
-    const l = this.lotes().find(x => x.id === reg.lote_id);
-    return l ? this.lotService.getDiasVida(l.fecha_inicio) : 0;
+    const l = this.lotes().find(x => x.id === reg.loteId);
+    return l ? this.lotService.getDiasVida(l.fechaInicio) : 0;
   }
 
   openDialog(): void {
@@ -83,7 +83,7 @@ export class PesajesComponent implements OnInit, OnDestroy {
   }
 
   async save(): Promise<void> {
-    if (!this.form.lote_id || !this.form.fecha || !this.form.peso_promedio) {
+    if (!this.form.loteId || !this.form.fecha || !this.form.pesoPromedio) {
       alert('Completa los campos');
       return;
     }

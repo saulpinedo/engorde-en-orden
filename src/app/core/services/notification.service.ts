@@ -43,13 +43,13 @@ export class NotificationService {
 
   private async checkLoteNotifications(lote: Lote): Promise<Notification[]> {
     const notifications: Notification[] = [];
-    const diasVida = this.lotService.getDiasVida(lote.fecha_inicio);
+    const diasVida = this.lotService.getDiasVida(lote.fechaInicio);
     const today = new Date();
-    
+
     const mortalidades = await this.lotService.getMortalidades(lote.id!);
     const consumos = await this.lotService.getConsumos(lote.id!);
     const hitos = await this.lotService.getHitos(lote.id!);
-    
+
     const mortalidadesHoy = mortalidades.filter(m => isToday(parseISO(m.fecha)));
     if (mortalidadesHoy.length === 0 && diasVida > 0) {
       notifications.push({
@@ -62,7 +62,7 @@ export class NotificationService {
         actionUrl: `/mortalidad/${lote.id}`
       });
     }
-    
+
     const consumosHoy = consumos.filter(c => isToday(parseISO(c.fecha)));
     if (consumosHoy.length === 0 && diasVida > 0) {
       notifications.push({
@@ -75,9 +75,9 @@ export class NotificationService {
         actionUrl: `/consumo/${lote.id}`
       });
     }
-    
+
     const etapaActual = this.lotService.getEtapaActual(diasVida);
-    if (lote.etapa_actual !== etapaActual) {
+    if (lote.etapaActual !== etapaActual) {
       notifications.push({
         id: `etapa-${lote.id}`,
         type: 'info',
@@ -88,13 +88,13 @@ export class NotificationService {
         actionUrl: `/lotes/${lote.id}`
       });
     }
-    
-    const vacunasPendientes = hitos.filter(h => 
-      h.tipo === 'VACUNA' && 
-      h.estado === 'PENDIENTE' && 
+
+    const vacunasPendientes = hitos.filter(h =>
+      h.tipo === 'VACUNA' &&
+      h.estado === 'PENDIENTE' &&
       (isToday(parseISO(h.fecha)) || isBefore(parseISO(h.fecha), today))
     );
-    
+
     for (const vacuna of vacunasPendientes) {
       notifications.push({
         id: `vacuna-pendiente-${vacuna.id}`,
@@ -107,18 +107,18 @@ export class NotificationService {
       });
     }
 
-    if (lote.cantidad_actual <= Math.floor(lote.cantidad_inicial * 0.8)) {
+    if (lote.cantidadActual <= Math.floor(lote.cantidadInicial * 0.8)) {
       notifications.push({
         id: `mortalidad-alta-${lote.id}`,
         type: 'error',
         title: 'Mortalidad elevada',
-        message: `Lote "${lote.nombre || 'Sin nombre'}" tiene ${((1 - lote.cantidad_actual/lote.cantidad_inicial) * 100).toFixed(1)}% de mortalidad.`,
+        message: `Lote "${lote.nombre || 'Sin nombre'}" tiene ${((1 - lote.cantidadActual/lote.cantidadInicial) * 100).toFixed(1)}% de mortalidad.`,
         date: today,
         read: false,
         actionUrl: `/lotes/${lote.id}`
       });
     }
-    
+
     return notifications;
   }
 

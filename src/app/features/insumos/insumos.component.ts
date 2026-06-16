@@ -1,18 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { LotService } from '../../core/services/lot.service';
-
-interface Insumo {
-  id?: string;
-  nombre: string;
-  tipo: 'VACUNA' | 'ANTIBIOTICO' | 'VITAMINA' | 'DESINFECTANTE';
-  precio_unitario?: number;
-  unidad?: string;
-  dias_aplicacion?: number;
-  descripcion?: string;
-  created_at?: string;
-}
+import { LotService, Insumo } from '../../core/services/lot.service';
 
 @Component({
   selector: 'app-insumos',
@@ -52,12 +41,12 @@ interface Insumo {
               <tr>
                 <td><strong>{{ v.nombre }}</strong></td>
                 <td>
-                  <span class="badge-tipo" [class]="'tipo-' + v.tipo.toLowerCase()">
-                    {{ getTipoLabel(v.tipo) }}
+                  <span class="badge-tipo" [class]="'tipo-' + (v.tipo || '').toLowerCase()">
+                    {{ getTipoLabel(v.tipo!) }}
                   </span>
                 </td>
-                <td>{{ v.precio_unitario ? v.precio_unitario + ' Bs/' + (v.unidad || 'und') : '-' }}</td>
-                <td>{{ v.dias_aplicacion ? 'Día ' + v.dias_aplicacion : '-' }}</td>
+                <td>{{ v.precioUnitario ? v.precioUnitario + ' Bs/' + (v.unidad || 'und') : '-' }}</td>
+                <td>{{ v.diasAplicacion ? 'Día ' + v.diasAplicacion : '-' }}</td>
                 <td>
                   <button class="btn-icon" (click)="editInsumo(v)" title="Editar">✏️</button>
                   <button class="btn-icon" (click)="deleteInsumo(v)" title="Eliminar">🗑️</button>
@@ -89,7 +78,7 @@ interface Insumo {
             <div class="form-row">
               <div class="form-group">
                 <label>Precio Unitario (Bs)</label>
-                <input type="number" [(ngModel)]="form.precio_unitario" min="0" step="0.01" class="input-field"/>
+                <input type="number" [(ngModel)]="form.precioUnitario" min="0" step="0.01" class="input-field"/>
               </div>
               <div class="form-group">
                 <label>Unidad</label>
@@ -104,7 +93,7 @@ interface Insumo {
             </div>
             <div class="form-group">
               <label>Días de Aplicación (opcional)</label>
-              <input type="number" [(ngModel)]="form.dias_aplicacion" min="0" class="input-field"/>
+              <input type="number" [(ngModel)]="form.diasAplicacion" min="0" class="input-field"/>
             </div>
             <div class="form-group">
               <label>Descripción</label>

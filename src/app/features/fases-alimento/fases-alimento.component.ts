@@ -22,13 +22,13 @@ import { LotService, FaseAlimento } from '../../core/services/lot.service';
             <div class="fase-card" [class]="'fase-' + getColorClass(fase)">
               <div class="fase-header">
                 <h2>{{ fase.nombre }}</h2>
-                <span class="dias-range">Días {{ fase.dia_inicio }} - {{ fase.dia_fin }}</span>
+                <span class="dias-range">Días {{ fase.diaInicio }} - {{ fase.diaFin }}</span>
               </div>
               
               <div class="fase-stats">
                 <div class="stat">
                   <span class="stat-label">Toneladas base</span>
-                  <span class="stat-value">{{ fase.toneladas_base | number:'1.2-2' }} Tn</span>
+                  <span class="stat-value">{{ fase.toneladasBase | number:'1.2-2' }} Tn</span>
                 </div>
                 <div class="stat">
                   <span class="stat-label">Costo estimado</span>
@@ -41,7 +41,7 @@ import { LotService, FaseAlimento } from '../../core/services/lot.service';
                 <div class="precio-input-group">
                   <input 
                     type="number" 
-                    [(ngModel)]="fase.precio_tn"
+                    [(ngModel)]="fase.precioTn"
                     (blur)="savePrecio(fase)"
                     class="precio-input"
                     step="10"
@@ -147,11 +147,11 @@ export class FasesAlimentoComponent implements OnInit {
   }
 
   getCostoTotal(fase: FaseAlimento): number {
-    return fase.toneladas_base * fase.precio_tn;
+    return fase.toneladasBase * fase.precioTn;
   }
 
   getTotalToneladas(): number {
-    return this.fases().reduce((sum, f) => sum + f.toneladas_base, 0);
+    return this.fases().reduce((sum, f) => sum + f.toneladasBase, 0);
   }
 
   getCostoTotalGeneral(): number {
@@ -166,7 +166,7 @@ export class FasesAlimentoComponent implements OnInit {
 
   async savePrecio(fase: FaseAlimento): Promise<void> {
     try {
-      await this.lotService.updateFaseAlimento(fase.id!, { precio_tn: fase.precio_tn });
+      await this.lotService.updateFaseAlimento(fase.id!, { precioTn: fase.precioTn });
     } catch (e: any) {
       alert('Error al guardar: ' + e.message);
       await this.loadFases();

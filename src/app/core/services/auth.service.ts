@@ -1,100 +1,114 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { Router } from '@angular/router';
-import type { User, Session } from '@supabase/supabase-js';
-import { SupabaseService } from './supabase.service';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as fbSignOut,
+  onAuthStateChanged,
+  updateProfile,
+  User as FbUser
+} from 'firebase/auth';
+import { FirebaseService } from './firebase.service';
+
+/** Sesión simplificada: lo mínimo que la app necesita. */
+export interface AppSession {
+  user: FbUser;
+  accessToken?: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private supabase = inject(SupabaseService);
+  private fb = inject(FirebaseService);
   private router = inject(Router);
-  // Emit when authentication state changes (login/logout)
+
+  /** Emite cuando el estado de auth cambia (login/logout). */
   public authChange = new Subject<void>();
-  
-  private userSignal = signal<User | null>(null);
-  private sessionSignal = signal<Session | null>(null);
-  
+
+  private userSignal = signal<FbUser | null>(null);
+  private sessionSignal = signal<AppSession | null>(null);
+  private initialisedSignal = signal<boolean>(false);
+
   user = this.userSignal.asReadonly();
   session = this.sessionSignal.asReadonly();
   isAuthenticated = computed(() => !!this.userSignal());
+  initialised = this.initialisedSignal.asReadonly();
 
   constructor() {
     this.initAuth();
   }
 
-  private async initAuth(): Promise<void> {
-    try {
-      const { data } = await this.supabase.client.auth.getSession();
-      if (data.session) {
-        this.sessionSignal.set(data.session);
-        this.userSignal.set(data.session.user);
-      }
-    } catch (error) {
-      console.error('Error getting session:', error);
-    }
+  /**
+   * Resuelve cuando Firebase Auth termina la primera verificación de sesión.
+   * Usar en provideAppInitializer para que el authGuard no se ejecute antes.
+   */
+  waitForAuth(): Promise<void> {
+    return new Promise(resolve => {
+      const unsubscribe = onAuthStateChanged(this.fb.auth, () => {
+        unsubscribe();
+        resolve();
+      });
+    });
+  }
 
-    this.supabase.client.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        this.sessionSignal.set(session);
-        this.userSignal.set(session.user);
-        this.authChange.next();
-      } else if (event === 'SIGNED_OUT') {
-        this.sessionSignal.set(null);
+  private initAuth(): void {
+    onAuthStateChanged(this.fb.auth, (fbUser) => {
+      if (fbUser) {
+        this.userSignal.set(fbUser);
+        this.sessionSignal.set({ user: fbUser });
+      } else {
         this.userSignal.set(null);
-        this.authChange.next();
+        this.sessionSignal.set(null);
       }
+      this.initialisedSignal.set(true);
+      this.authChange.next();
     });
   }
 
   async signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await this.supabase.client.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      if (data.session) {
-        this.sessionSignal.set(data.session);
-        this.userSignal.set(data.user);
-        this.authChange.next();
-      }
-
+      const cred = await signInWithEmailAndPassword(this.fb.auth, email, password);
+      this.userSignal.set(cred.user);
+      this.sessionSignal.set({ user: cred.user });
+      this.authChange.next();
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message || 'Error desconocido' };
+      return { success: false, error: this.friendlyError(error?.code, error?.message) };
     }
   }
 
   async signUp(email: string, password: string, name?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await this.supabase.client.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name }
-        }
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
+      const cred = await createUserWithEmailAndPassword(this.fb.auth, email, password);
+      if (name) {
+        await updateProfile(cred.user, { displayName: name });
       }
-
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message || 'Error desconocido' };
+      return { success: false, error: this.friendlyError(error?.code, error?.message) };
     }
   }
 
   async signOut(): Promise<void> {
-    await this.supabase.client.auth.signOut();
-    this.sessionSignal.set(null);
+    await fbSignOut(this.fb.auth);
     this.userSignal.set(null);
+    this.sessionSignal.set(null);
     this.router.navigate(['/auth/login']);
+  }
+
+  /** Traduce códigos comunes de Firebase a mensajes legibles. */
+  private friendlyError(code?: string, fallback?: string): string {
+    switch (code) {
+      case 'auth/invalid-email': return 'Email inválido.';
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential': return 'Email o contraseña incorrectos.';
+      case 'auth/email-already-in-use': return 'Este email ya está registrado.';
+      case 'auth/weak-password': return 'La contraseña debe tener al menos 6 caracteres.';
+      case 'auth/too-many-requests': return 'Demasiados intentos. Probá más tarde.';
+      default: return fallback || 'Error desconocido';
+    }
   }
 }

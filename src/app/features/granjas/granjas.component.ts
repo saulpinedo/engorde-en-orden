@@ -32,7 +32,7 @@ import { LotService, Granja } from '../../core/services/lot.service';
               <tr>
                 <td><strong>{{ granja.nombre }}</strong></td>
                 <td>{{ granja.ubicacion || '-' }}</td>
-                <td>{{ granja.created_at | date:'dd/MM/yyyy' }}</td>
+                <td>{{ granja.createdAt | date:'dd/MM/yyyy' }}</td>
                 <td>
                   <button class="btn-icon" (click)="editGranja(granja)">✏️</button>
                   <button class="btn-icon btn-danger" (click)="deleteGranja(granja)">🗑️</button>

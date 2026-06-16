@@ -29,7 +29,7 @@ import { RefreshService } from '../../core/services/refresh.service';
         <div class="modal-overlay" (click)="dialogVisible.set(false)">
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Registrar Mortalidad</h3>
-            <div class="form-group"><label>Lote</label><select [(ngModel)]="form.lote_id" class="input-field"><option value="">Seleccionar</option>@for (l of lotes(); track l.id) { <option [value]="l.id">{{ l.nombre || 'Lote ' + l.id?.slice(0,4) }}</option> }</select></div>
+            <div class="form-group"><label>Lote</label><select [(ngModel)]="form.loteId" class="input-field"><option value="">Seleccionar</option>@for (l of lotes(); track l.id) { <option [value]="l.id">{{ l.nombre || 'Lote ' + l.id?.slice(0,4) }}</option> }</select></div>
             <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
             <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" min="1" class="input-field"/></div>
             <div class="form-group"><label>Causa</label><input type="text" [(ngModel)]="form.causa" placeholder="Opcional" class="input-field"/></div>
@@ -78,7 +78,7 @@ export class MortalidadComponent implements OnInit, OnDestroy {
   }
 
   async save(): Promise<void> {
-    if (!this.form.lote_id || !this.form.fecha || !this.form.cantidad) {
+    if (!this.form.loteId || !this.form.fecha || !this.form.cantidad) {
       alert('Completa los campos');
       return;
     }

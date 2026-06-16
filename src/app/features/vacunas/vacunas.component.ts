@@ -32,8 +32,8 @@ import { LotService, Vacuna } from '../../core/services/lot.service';
             @for (v of vacunas(); track v.id) {
               <tr>
                 <td><strong>{{ v.nombre }}</strong></td>
-                <td>{{ v.precio_unitario ? v.precio_unitario + ' Bs/' + (v.unidad || 'und') : '-' }}</td>
-                <td>{{ v.dias_aplicacion ? 'Día ' + v.dias_aplicacion : '-' }}</td>
+                <td>{{ v.precioUnitario ? v.precioUnitario + ' Bs/' + (v.unidad || 'und') : '-' }}</td>
+                <td>{{ v.diasAplicacion ? 'Día ' + v.diasAplicacion : '-' }}</td>
                 <td>{{ v.descripcion || '-' }}</td>
                 <td>
                   <button class="btn-icon" (click)="editInsumo(v)" title="Editar">✏️</button>
@@ -57,7 +57,7 @@ import { LotService, Vacuna } from '../../core/services/lot.service';
             <div class="form-row">
               <div class="form-group">
                 <label>Precio Unitario (Bs)</label>
-                <input type="number" [(ngModel)]="form.precio_unitario" min="0" step="0.01" class="input-field"/>
+                <input type="number" [(ngModel)]="form.precioUnitario" min="0" step="0.01" class="input-field"/>
               </div>
               <div class="form-group">
                 <label>Unidad</label>
@@ -71,7 +71,7 @@ import { LotService, Vacuna } from '../../core/services/lot.service';
             </div>
             <div class="form-group">
               <label>Días de Aplicación</label>
-              <input type="number" [(ngModel)]="form.dias_aplicacion" min="0" class="input-field"/>
+              <input type="number" [(ngModel)]="form.diasAplicacion" min="0" class="input-field"/>
             </div>
             <div class="form-group">
               <label>Descripción</label>

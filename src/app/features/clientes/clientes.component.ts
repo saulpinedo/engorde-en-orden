@@ -90,8 +90,8 @@ import { format, subMonths } from 'date-fns';
                         <span class="venta-lote">{{ getLoteNombre(venta) }}</span>
                       </div>
                       <div class="venta-details">
-                        <span class="venta-kg">{{ venta.total_kg | number:'1.1-1' }} kg</span>
-                        <span class="venta-total">{{ venta.total_bs | number:'1.2-2' }} Bs</span>
+                        <span class="venta-kg">{{ venta.totalKg | number:'1.1-1' }} kg</span>
+                        <span class="venta-total">{{ venta.totalBs | number:'1.2-2' }} Bs</span>
                         <span class="venta-estado" [class]="venta.estado.toLowerCase()">
                           {{ getEstadoLabel(venta.estado) }}
                         </span>
@@ -349,7 +349,7 @@ export class ClientesComponent implements OnInit {
   }
 
   totalFiltrado(): number {
-    return this.ventasFiltradas().reduce((sum, v) => sum + v.total_bs, 0);
+    return this.ventasFiltradas().reduce((sum, v) => sum + v.totalBs, 0);
   }
 
   closeClienteDetail(): void {

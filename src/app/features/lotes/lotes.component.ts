@@ -55,11 +55,16 @@ import { format } from 'date-fns';
                         <span class="badge-finalizado">FINALIZADO</span>
                       }
                     </td>
-                    <td>{{ lote.galpon?.granja?.nombre }} / {{ lote.galpon?.nombre }}</td>
+                    <td>
+                      <ng-container *ngIf="false"></ng-container>
+                      {{ lote.granjaNombre || lote.galpon?.granja?.nombre || '?' }}
+                      /
+                      {{ lote.galponNombre || lote.galpon?.nombre || '?' }}
+                    </td>
                     <td>{{ lote.raza }}</td>
                     <td>{{ getDiasVida(lote) }}</td>
-                    <td><span class="tag" [class]="'tag-' + lote.etapa_actual.toLowerCase()">{{ lote.etapa_actual }}</span></td>
-                    <td>{{ lote.cantidad_actual | number }} / {{ lote.cantidad_inicial | number }}</td>
+                    <td><span class="tag" [class]="'tag-' + lote.etapaActual.toLowerCase()">{{ lote.etapaActual }}</span></td>
+                    <td>{{ lote.cantidadActual | number }} / {{ lote.cantidadInicial | number }}</td>
                     <td>
                       <button class="btn-icon" (click)="goToTimeline(lote)" title="Ver Timeline">📅</button>
                       <button class="btn-icon" (click)="editLote(lote)" title="Editar">✏️</button>
@@ -92,7 +97,7 @@ import { format } from 'date-fns';
               </div>
               <div class="form-group">
                 <label>Galpón</label>
-                <select [(ngModel)]="loteForm.galpon_id" class="input-field">
+                <select [(ngModel)]="loteForm.galponId" class="input-field">
                   <option value="">Seleccionar galpón</option>
                   @for (g of galponesFiltrados(); track g.id) {
                     <option [value]="g.id">{{ g.nombre }}</option>
@@ -113,11 +118,11 @@ import { format } from 'date-fns';
               </div>
               <div class="form-group">
                 <label>Cantidad Inicial</label>
-                <input type="number" [(ngModel)]="loteForm.cantidad_inicial" min="1" class="input-field"/>
+                <input type="number" [(ngModel)]="loteForm.cantidadInicial" min="1" class="input-field"/>
               </div>
               <div class="form-group">
                 <label>Precio Pollito ($)</label>
-                <input type="number" [(ngModel)]="loteForm.precio_pollito" step="0.01" class="input-field"/>
+                <input type="number" [(ngModel)]="loteForm.precioPollito" step="0.01" class="input-field"/>
               </div>
               <div class="form-group">
                 <label>Fecha Inicio</label>
@@ -191,7 +196,7 @@ export class LotesComponent implements OnInit {
   selectedGranja = '';
   fechaInicioStr = format(new Date(), 'yyyy-MM-dd');
   
-  loteForm: Partial<Lote> = { galpon_id: '', nombre: '', raza: 'COBB 500', cantidad_inicial: 1000, precio_pollito: 0, peso_inicial: 45 };
+  loteForm: Partial<Lote> = { galponId: '', nombre: '', raza: 'COBB 500', cantidadInicial: 1000, precioPollito: 0, pesoInicial: 45 };
   razas = ['COBB 500', 'ROSS 308', 'HUBBARD', 'HYBRO', 'ARNOLD'];
 
   async ngOnInit(): Promise<void> {
@@ -219,12 +224,12 @@ export class LotesComponent implements OnInit {
   }
 
   onGranjaChange(): void {
-    this.galponesFiltrados.set(this.galpones().filter(g => g.granja_id === this.selectedGranja));
-    this.loteForm.galpon_id = '';
+    this.galponesFiltrados.set(this.galpones().filter(g => g.granjaId === this.selectedGranja));
+    this.loteForm.galponId = '';
   }
 
   getDiasVida(lote: Lote): number {
-    return this.lotService.getDiasVida(lote.fecha_inicio);
+    return this.lotService.getDiasVida(lote.fechaInicio);
   }
 
   goToTimeline(lote: Lote): void {
@@ -236,25 +241,25 @@ export class LotesComponent implements OnInit {
     this.selectedGranja = '';
     this.galponesFiltrados.set([]);
     this.fechaInicioStr = format(new Date(), 'yyyy-MM-dd');
-    this.loteForm = { galpon_id: '', nombre: '', raza: 'COBB 500', cantidad_inicial: 1000, precio_pollito: 0, peso_inicial: 45 };
+    this.loteForm = { galponId: '', nombre: '', raza: 'COBB 500', cantidadInicial: 1000, precioPollito: 0, pesoInicial: 45 };
     this.dialogVisible.set(true);
   }
 
   editLote(lote: Lote): void {
     this.editingLote = lote;
     this.loteForm = { ...lote };
-    this.selectedGranja = lote.galpon?.granja_id || '';
-    this.galponesFiltrados.set(this.galpones().filter(g => g.granja_id === this.selectedGranja));
-    this.fechaInicioStr = lote.fecha_inicio;
+    this.selectedGranja = lote.galpon?.granjaId || '';
+    this.galponesFiltrados.set(this.galpones().filter(g => g.granjaId === this.selectedGranja));
+    this.fechaInicioStr = lote.fechaInicio;
     this.dialogVisible.set(true);
   }
 
   async saveLote(): Promise<void> {
-    if (!this.loteForm.galpon_id || !this.loteForm.cantidad_inicial) {
+    if (!this.loteForm.galponId || !this.loteForm.cantidadInicial) {
       alert('Completa los campos requeridos'); return;
     }
     try {
-      const data = { ...this.loteForm, fecha_inicio: this.fechaInicioStr };
+      const data = { ...this.loteForm, fechaInicio: this.fechaInicioStr };
       if (this.editingLote) {
         await this.lotService.updateLote(this.editingLote.id!, data);
       } else {

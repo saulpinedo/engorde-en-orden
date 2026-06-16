@@ -42,9 +42,9 @@ import { format } from 'date-fns';
                   </div>
                   <div class="venta-body">
                     <div class="venta-info">
-                      <span>{{ venta.total_kg | number:'1.1-1' }} kg</span>
-                      <span>{{ venta.total_bs | number:'1.2-2' }} Bs</span>
-                      <span>@ {{ venta.precio_kg }} Bs/kg</span>
+                      <span>{{ venta.totalKg | number:'1.1-1' }} kg</span>
+                      <span>{{ venta.totalBs | number:'1.2-2' }} Bs</span>
+                      <span>@ {{ venta.precioKg }} Bs/kg</span>
                     </div>
                     <div class="venta-details">
                       @if (venta.placa) { <span>🚗 {{ venta.placa }}</span> }
@@ -81,11 +81,11 @@ import { format } from 'date-fns';
           <div class="resumen-stats">
             <div class="stat-card">
               <span class="stat-label">Total Vendido</span>
-              <span class="stat-value">{{ resumenLote().total_kg | number:'1.1-1' }} kg</span>
+              <span class="stat-value">{{ resumenLote().totalKg | number:'1.1-1' }} kg</span>
             </div>
             <div class="stat-card">
               <span class="stat-label">Ingresos</span>
-              <span class="stat-value highlight">{{ resumenLote().total_bs | number:'1.2-2' }} Bs</span>
+              <span class="stat-value highlight">{{ resumenLote().totalBs | number:'1.2-2' }} Bs</span>
             </div>
             <div class="stat-card">
               <span class="stat-label">Por Cobrar</span>
@@ -114,9 +114,9 @@ import { format } from 'date-fns';
               </div>
               <div class="venta-body">
                 <div class="venta-info">
-                  <span>{{ venta.total_kg | number:'1.1-1' }} kg</span>
-                  <span>{{ venta.total_bs | number:'1.2-2' }} Bs</span>
-                  <span>@ {{ venta.precio_kg }} Bs/kg</span>
+                  <span>{{ venta.totalKg | number:'1.1-1' }} kg</span>
+                  <span>{{ venta.totalBs | number:'1.2-2' }} Bs</span>
+                  <span>@ {{ venta.precioKg }} Bs/kg</span>
                 </div>
                 <div class="venta-details">
                   <span>📅 {{ formatDate(venta.fecha) }}</span>
@@ -213,8 +213,8 @@ import { format } from 'date-fns';
                 <div class="pesada-item" (click)="editPesada(pesada, i)">
                   <span class="pesada-num">{{ i + 1 }}</span>
                   <div class="pesada-info">
-                    <span class="pesada-peso">{{ pesada.peso_kg | number:'1.1-1' }} kg</span>
-                    <span class="pesada-pollos">🐔 {{ pesada.cantidad_pollos }}</span>
+                    <span class="pesada-peso">{{ pesada.pesoKg | number:'1.1-1' }} kg</span>
+                    <span class="pesada-pollos">🐔 {{ pesada.cantidadPollos }}</span>
                   </div>
                   @if (editandoPesadaIndex === i) {
                     <div class="pesada-edit" (click)="$event.stopPropagation()">
@@ -273,7 +273,7 @@ import { format } from 'date-fns';
           <div class="modal" (click)="$event.stopPropagation()">
             <h3>Registrar Pago</h3>
             <p class="modal-info">
-              Total: {{ ventaActual()?.total_bs | number:'1.2-2' }} Bs
+              Total: {{ ventaActual()?.totalBs | number:'1.2-2' }} Bs
             </p>
             <div class="form-group">
               <label>Monto a pagar</label>
@@ -428,7 +428,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   ventasFiltradas = signal<Venta[]>([]);
   filtroEstado = 'todas';
   pesadas = signal<DetallePesada[]>([]);
-  resumenLote = signal<{ total_bs: number; total_kg: number; pendientes: number }>({ total_bs: 0, total_kg: 0, pendientes: 0 });
+  resumenLote = signal<{ totalBs: number; totalKg: number; pendientes: number }>({ totalBs: 0, totalKg: 0, pendientes: 0 });
   
   ventaActual = signal<Venta | null>(null);
   pagoModalVisible = signal(false);
@@ -564,21 +564,21 @@ export class VentasComponent implements OnInit, OnDestroy {
   
   <table>
     <tr><th>#</th><th>Peso (kg)</th><th>Pollos</th></tr>
-    ${pesadas.map((p, i) => `<tr><td>${i + 1}</td><td>${p.peso_kg.toFixed(2)}</td><td>${p.cantidad_pollos}</td></tr>`).join('')}
+    ${pesadas.map((p, i) => `<tr><td>${i + 1}</td><td>${p.pesoKg.toFixed(2)}</td><td>${p.cantidadPollos}</td></tr>`).join('')}
   </table>
   
   <div class="info">
-    <div class="info-row"><span class="label">Total Pollos:</span> <span>${pesadas.reduce((s, p) => s + p.cantidad_pollos, 0)}</span></div>
-    <div class="info-row"><span class="label">Total Kilos:</span> <span>${venta.total_kg.toFixed(2)} kg</span></div>
-    <div class="info-row"><span class="label">Precio/kg:</span> <span>${venta.precio_kg} Bs</span></div>
+    <div class="info-row"><span class="label">Total Pollos:</span> <span>${pesadas.reduce((s, p) => s + p.cantidadPollos, 0)}</span></div>
+    <div class="info-row"><span class="label">Total Kilos:</span> <span>${venta.totalKg.toFixed(2)} kg</span></div>
+    <div class="info-row"><span class="label">Precio/kg:</span> <span>${venta.precioKg} Bs</span></div>
   </div>
   
-  <div class="total">TOTAL: ${venta.total_bs.toFixed(2)} Bs</div>
+  <div class="total">TOTAL: ${venta.totalBs.toFixed(2)} Bs</div>
   
   ${venta.estado !== 'CANCELADO' && pagos.length > 0 ? `
   <div class="info" style="margin-top:15px;">
     <div class="info-row"><span class="label">Pagado:</span> <span>${pagos.reduce((s, p) => s + p.monto, 0).toFixed(2)} Bs</span></div>
-    <div class="info-row"><span class="label">Pendiente:</span> <span>${(venta.total_bs - pagos.reduce((s, p) => s + p.monto, 0)).toFixed(2)} Bs</span></div>
+    <div class="info-row"><span class="label">Pendiente:</span> <span>${(venta.totalBs - pagos.reduce((s, p) => s + p.monto, 0)).toFixed(2)} Bs</span></div>
   </div>
   ` : ''}
   
@@ -652,9 +652,9 @@ export class VentasComponent implements OnInit, OnDestroy {
     
     const pesada: DetallePesada = {
       id: 'temp-' + Date.now(),
-      venta_id: '',
-      peso_kg: this.nuevaPesada,
-      cantidad_pollos: this.nuevaCantidadPollos
+      ventaId: '',
+      pesoKg: this.nuevaPesada,
+      cantidadPollos: this.nuevaCantidadPollos
     };
     
     this.pesadas.update(list => [...list, pesada]);
@@ -664,25 +664,25 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   editPesada(pesada: DetallePesada, index: number): void {
     this.editandoPesadaIndex = index;
-    this.editPesadaKg = pesada.peso_kg;
-    this.editPesadaPollos = pesada.cantidad_pollos;
+    this.editPesadaKg = pesada.pesoKg;
+    this.editPesadaPollos = pesada.cantidadPollos;
   }
 
   async savePesada(id: string): Promise<void> {
     if (id.startsWith('temp-')) {
       this.pesadas.update(list => list.map(p => {
         if (p.id === id) {
-          return { ...p, peso_kg: this.editPesadaKg, cantidad_pollos: this.editPesadaPollos };
+          return { ...p, pesoKg: this.editPesadaKg, cantidadPollos: this.editPesadaPollos };
         }
         return p;
       }));
     } else {
-      await this.lotService.updatePesada(id, this.editPesadaKg, this.editPesadaPollos);
+      await this.lotService.updatePesada(id, this.editPesadaKg, this.editPesadaPollos, this.ventaActual()!.id!);
       const pesadaActualizada = this.pesadas().find(p => p.id === id);
       if (pesadaActualizada) {
         this.pesadas.update(list => list.map(p => {
           if (p.id === id) {
-            return { ...p, peso_kg: this.editPesadaKg, cantidad_pollos: this.editPesadaPollos };
+            return { ...p, pesoKg: this.editPesadaKg, cantidadPollos: this.editPesadaPollos };
           }
           return p;
         }));
@@ -702,11 +702,11 @@ export class VentasComponent implements OnInit, OnDestroy {
   }
 
   getTotalKg(): number {
-    return this.pesadas().reduce((sum, p) => sum + p.peso_kg, 0);
+    return this.pesadas().reduce((sum, p) => sum + p.pesoKg, 0);
   }
 
   getTotalPollos(): number {
-    return this.pesadas().reduce((sum, p) => sum + (p.cantidad_pollos || 0), 0);
+    return this.pesadas().reduce((sum, p) => sum + (p.cantidadPollos || 0), 0);
   }
 
   getTotalBs(): number {
@@ -745,11 +745,11 @@ export class VentasComponent implements OnInit, OnDestroy {
 
     try {
       const venta = await this.lotService.createVenta({
-        cliente_id: this.selectedCliente()?.id,
-        lote_id: this.loteId || undefined,
-        precio_kg: this.precioKg,
-        total_kg: this.getTotalKg(),
-        total_bs: this.getTotalBs(),
+        clienteId: this.selectedCliente()?.id,
+        loteId: this.loteId || undefined,
+        precioKg: this.precioKg,
+        totalKg: this.getTotalKg(),
+        totalBs: this.getTotalBs(),
         placa: this.placa || undefined,
         fecha: this.fecha,
         observaciones: this.observaciones || undefined,
@@ -757,7 +757,7 @@ export class VentasComponent implements OnInit, OnDestroy {
       });
 
       for (const pesada of this.pesadas()) {
-        await this.lotService.addPesada(venta.id!, pesada.peso_kg, pesada.cantidad_pollos);
+        await this.lotService.addPesada(venta.id!, pesada.pesoKg, pesada.cantidadPollos);
       }
 
       if (this.loteId) {
@@ -795,7 +795,7 @@ export class VentasComponent implements OnInit, OnDestroy {
     
     try {
       await this.lotService.createPago({
-        venta_id: this.ventaActual()!.id!,
+        ventaId: this.ventaActual()!.id!,
         monto: this.montoPago,
         fecha: format(new Date(), 'yyyy-MM-dd'),
         metodo: this.metodoPago

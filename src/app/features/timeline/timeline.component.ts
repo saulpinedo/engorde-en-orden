@@ -8,9 +8,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
-import { LotService, Lote, Mortalidad, ConsumoDiario, Pesaje, Vacuna, Hito } from '../../core/services/lot.service';
+import { LotService, Lote, Mortalidad, ConsumoDiario, Pesaje, Vacuna, Hito, VacunaAplicada, Antibiotico, Vitamina, Desinfectante } from '../../core/services/lot.service';
 import { RefreshService } from '../../core/services/refresh.service';
-import { SupabaseService } from '../../core/services/supabase.service';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 
 @Component({
@@ -37,7 +36,7 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
           </div>
           <div class="header-actions">
             <span class="badge" [class]="'badge-' + lote()!.estado.toLowerCase()">{{ lote()!.estado }}</span>
-            <span class="badge badge-etapa">{{ lote()!.etapa_actual }}</span>
+            <span class="badge badge-etapa">{{ lote()!.etapaActual }}</span>
           </div>
         </div>
 
@@ -162,7 +161,7 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
               </div>
               <div class="stat">
                 <span class="stat-label">Pollos Actuales</span>
-                <span class="stat-value">{{ lote()!.cantidad_actual | number }}</span>
+                <span class="stat-value">{{ lote()!.cantidadActual | number }}</span>
               </div>
               <div class="stat">
                 <span class="stat-label">Mortalidad</span>
@@ -170,7 +169,7 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
               </div>
               <div class="stat">
                 <span class="stat-label">Ingreso Pollitos</span>
-                <span class="stat-value">{{ lote()!.cantidad_inicial | number }}</span>
+                <span class="stat-value">{{ lote()!.cantidadInicial | number }}</span>
               </div>
             </div>
 
@@ -226,34 +225,34 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
                 }
                 @if (modalMode() === 'consumo') {
                   <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
-                  <div class="form-group"><label>Cantidad (kg)</label><input type="number" [(ngModel)]="form.cantidad_kg" step="0.5" min="0" class="input-field"/></div>
+                  <div class="form-group"><label>Cantidad (kg)</label><input type="number" [(ngModel)]="form.cantidadKg" step="0.5" min="0" class="input-field"/></div>
                   <div class="info-box"><span class="info-icon">ℹ️</span><span>Durará {{ calcularDiasDuracion() }} días ({{ getConsumoPorPollo() }}g/pollo/día)</span></div>
                 }
                 @if (modalMode() === 'pesaje') {
                   <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
-                  <div class="form-group"><label>Peso Promedio (g)</label><input type="number" [(ngModel)]="form.peso_promedio" step="10" class="input-field"/></div>
+                  <div class="form-group"><label>Peso Promedio (g)</label><input type="number" [(ngModel)]="form.pesoPromedio" step="10" class="input-field"/></div>
                   <div class="form-group"><label>Muestra</label><input type="number" [(ngModel)]="form.muestra" min="1" class="input-field"/></div>
                 }
                 @if (modalMode() === 'vacuna') {
                   <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
-                  <div class="form-group"><label>Vacuna</label><select [(ngModel)]="form.vacuna_id" class="input-field"><option value="">Seleccionar</option>@for (v of vacunas(); track v.id) { <option [value]="v.id">{{ v.nombre }}</option> }</select></div>
+                  <div class="form-group"><label>Vacuna</label><select [(ngModel)]="form.catalogoVacunaId" class="input-field"><option value="">Seleccionar</option>@for (v of vacunas(); track v.id) { <option [value]="v.id">{{ v.nombre }}</option> }</select></div>
                   <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
                 }
                 @if (modalMode() === 'antibiotico') {
                   <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
-                  <div class="form-group"><label>Antibiótico</label><select [(ngModel)]="form.catalogo_id" class="input-field"><option value="">Seleccionar</option>@for (a of antibioticos(); track a.id) { <option [value]="a.id">{{ a.nombre }} ({{ a.unidad }})</option> }</select></div>
+                  <div class="form-group"><label>Antibiótico</label><select [(ngModel)]="form.catalogoId" class="input-field"><option value="">Seleccionar</option>@for (a of antibioticos(); track a.id) { <option [value]="a.id">{{ a.nombre }} ({{ a.unidad }})</option> }</select></div>
                   <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" step="0.1" min="0" class="input-field"/></div>
                   <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
                 }
                 @if (modalMode() === 'vitamina') {
                   <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
-                  <div class="form-group"><label>Vitamina</label><select [(ngModel)]="form.catalogo_id" class="input-field"><option value="">Seleccionar</option>@for (v of vitaminas(); track v.id) { <option [value]="v.id">{{ v.nombre }} ({{ v.unidad }})</option> }</select></div>
+                  <div class="form-group"><label>Vitamina</label><select [(ngModel)]="form.catalogoId" class="input-field"><option value="">Seleccionar</option>@for (v of vitaminas(); track v.id) { <option [value]="v.id">{{ v.nombre }} ({{ v.unidad }})</option> }</select></div>
                   <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" step="0.1" min="0" class="input-field"/></div>
                   <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
                 }
                 @if (modalMode() === 'desinfectante') {
                   <div class="form-group"><label>Fecha</label><input type="date" [(ngModel)]="form.fecha" class="input-field"/></div>
-                  <div class="form-group"><label>Desinfectante</label><select [(ngModel)]="form.catalogo_id" class="input-field"><option value="">Seleccionar</option>@for (d of desinfectantes(); track d.id) { <option [value]="d.id">{{ d.nombre }} ({{ d.unidad }})</option> }</select></div>
+                  <div class="form-group"><label>Desinfectante</label><select [(ngModel)]="form.catalogoId" class="input-field"><option value="">Seleccionar</option>@for (d of desinfectantes(); track d.id) { <option [value]="d.id">{{ d.nombre }} ({{ d.unidad }})</option> }</select></div>
                   <div class="form-group"><label>Cantidad</label><input type="number" [(ngModel)]="form.cantidad" step="0.1" min="0" class="input-field"/></div>
                   <div class="form-group"><label>Notas</label><input type="text" [(ngModel)]="form.notas" placeholder="Opcional" class="input-field"/></div>
                 }
@@ -369,7 +368,6 @@ export class TimelineComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private lotService = inject(LotService);
   private refreshService = inject(RefreshService);
-  private supabase = inject(SupabaseService);
   private refreshSub: any;
 
   lote = signal<Lote | null>(null);
@@ -403,10 +401,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
   mortalidadesCache: Mortalidad[] = [];
   consumosCache: ConsumoDiario[] = [];
   pesajesCache: Pesaje[] = [];
-  vacunasAplicadasCache: any[] = [];
-  antibioticosAplicadosCache: any[] = [];
-  vitaminasAplicadasCache: any[] = [];
-  desinfectantesAplicadosCache: any[] = [];
+  vacunasAplicadasCache: VacunaAplicada[] = [];
+  antibioticosAplicadosCache: Antibiotico[] = [];
+  vitaminasAplicadasCache: Vitamina[] = [];
+  desinfectantesAplicadosCache: Desinfectante[] = [];
 
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
@@ -462,10 +460,10 @@ export class TimelineComponent implements OnInit, OnDestroy {
       
       if (loteData) {
         this.lote.set(loteData);
-        this.diasVida.set(this.lotService.getDiasVida(loteData.fecha_inicio));
-        this.mortalidad.set(Math.round((1 - loteData.cantidad_actual / loteData.cantidad_inicial) * 100 * 10) / 10);
-        
-        const startDate = new Date(loteData.fecha_inicio);
+        this.diasVida.set(this.lotService.getDiasVida(loteData.fechaInicio));
+        this.mortalidad.set(Math.round((1 - loteData.cantidadActual / loteData.cantidadInicial) * 100 * 10) / 10);
+
+        const startDate = new Date(loteData.fechaInicio);
         const initialViewDate = addDays(startDate, Math.max(0, this.diasVida() - 14));
         this.currentViewDate.set(initialViewDate);
         
@@ -517,15 +515,15 @@ export class TimelineComponent implements OnInit, OnDestroy {
     
     if (this.showConsumo) {
       this.consumosCache.forEach(c => {
-        const diasDuracion = this.calcularDiasConsumo(c.cantidad_kg, lote);
+        const diasDuracion = this.calcularDiasConsumo(c.cantidadKg, lote);
         events.push({
           id: `c-${c.id}`,
-          title: `🌽 ${c.cantidad_kg}kg (~${diasDuracion}d)`,
+          title: `🌽 ${c.cantidadKg}kg (~${diasDuracion}d)`,
           start: c.fecha,
           end: format(addDays(new Date(c.fecha), diasDuracion), 'yyyy-MM-dd'),
           backgroundColor: '#28a745',
           borderColor: '#28a745',
-          extendedProps: { tipo: 'consumo', cantidad: c.cantidad_kg, originalId: c.id }
+          extendedProps: { tipo: 'consumo', cantidad: c.cantidadKg, originalId: c.id }
         });
       });
     }
@@ -534,18 +532,18 @@ export class TimelineComponent implements OnInit, OnDestroy {
       this.pesajesCache.forEach(p => {
         events.push({
           id: `p-${p.id}`,
-          title: `⚖️ ${p.peso_promedio}g`,
+          title: `⚖️ ${p.pesoPromedio}g`,
           start: p.fecha,
           backgroundColor: '#17a2b8',
           borderColor: '#17a2b8',
-          extendedProps: { tipo: 'pesaje', peso: p.peso_promedio, muestra: p.muestra, originalId: p.id }
+          extendedProps: { tipo: 'pesaje', peso: p.pesoPromedio, muestra: p.muestra, originalId: p.id }
         });
       });
     }
     
     if (this.showVacuna) {
       this.vacunasAplicadasCache.forEach(h => {
-        const cat = this.vacunas().find(v => v.id === h.catalogo_vacuna_id);
+        const cat = this.vacunas().find(v => v.id === h.catalogoVacunaId);
         events.push({
           id: `va-${h.id}`,
           title: `💉 ${cat?.nombre || 'Vacuna'}`,
@@ -559,7 +557,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     
     if (this.showAntibiotico) {
       this.antibioticosAplicadosCache.forEach(h => {
-        const cat = this.antibioticos().find(a => a.id === h.catalogo_id);
+        const cat = this.antibioticos().find(a => a.id === h.catalogoId);
         events.push({
           id: `ab-${h.id}`,
           title: `💊 ${cat?.nombre || 'Antibiótico'}`,
@@ -573,7 +571,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     
     if (this.showVitamina) {
       this.vitaminasAplicadasCache.forEach(h => {
-        const cat = this.vitaminas().find(v => v.id === h.catalogo_id);
+        const cat = this.vitaminas().find(v => v.id === h.catalogoId);
         events.push({
           id: `vt-${h.id}`,
           title: `🌿 ${cat?.nombre || 'Vitamina'}`,
@@ -587,7 +585,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     
     if (this.showDesinfectante) {
       this.desinfectantesAplicadosCache.forEach(h => {
-        const cat = this.desinfectantes().find(d => d.id === h.catalogo_id);
+        const cat = this.desinfectantes().find(d => d.id === h.catalogoId);
         events.push({
           id: `ds-${h.id}`,
           title: `🧴 ${cat?.nombre || 'Desinfectante'}`,
@@ -609,7 +607,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
 
   getEtapaChangeEvents(lote: Lote): EventInput[] {
     const events: EventInput[] = [];
-    const startDate = new Date(lote.fecha_inicio);
+    const startDate = new Date(lote.fechaInicio);
     
     const etapas = [
       { nombre: 'INICIO', dias: [0, 10], color: '#FFC107', textColor: '#856404' },
@@ -640,7 +638,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
     const currentLote = this.lote();
     if (!currentLote) return [];
     
-    const startDate = new Date(currentLote.fecha_inicio);
+    const startDate = new Date(currentLote.fechaInicio);
     const diasTotales = 45;
     const days: { date: string; etapa: string; dayNumber: number }[] = [];
     
@@ -700,22 +698,22 @@ export class TimelineComponent implements OnInit, OnDestroy {
   }
 
   calcularDiasConsumo(kg: number, lote: Lote): number {
-    const etapa = lote.etapa_actual;
+    const etapa = lote.etapaActual;
     const consumoDiarioGramos = this.getConsumoDiarioCobb(etapa);
-    const totalPollos = lote.cantidad_actual;
+    const totalPollos = lote.cantidadActual;
     return Math.max(1, Math.round((kg * 1000) / (consumoDiarioGramos * totalPollos)));
   }
 
   calcularDiasDuracion(): number {
     const currentLote = this.lote();
-    if (!currentLote || !this.form.cantidad_kg) return 0;
-    return this.calcularDiasConsumo(this.form.cantidad_kg, currentLote);
+    if (!currentLote || !this.form.cantidadKg) return 0;
+    return this.calcularDiasConsumo(this.form.cantidadKg, currentLote);
   }
 
   getConsumoPorPollo(): number {
     const currentLote = this.lote();
     if (!currentLote) return 0;
-    return Math.round(this.getConsumoDiarioCobb(currentLote.etapa_actual) * 1000);
+    return Math.round(this.getConsumoDiarioCobb(currentLote.etapaActual) * 1000);
   }
 
   getConsumoDiarioCobb(etapa: string): number {
@@ -754,26 +752,26 @@ export class TimelineComponent implements OnInit, OnDestroy {
         this.form = { fecha: event.startStr, cantidad: props.cantidad, causa: props.causa || '' };
         break;
       case 'consumo':
-        this.form = { fecha: event.startStr, cantidad_kg: props.cantidad };
+        this.form = { fecha: event.startStr, cantidadKg: props.cantidad };
         break;
       case 'pesaje':
-        this.form = { fecha: event.startStr, peso_promedio: props.peso, muestra: props.muestra || 10 };
+        this.form = { fecha: event.startStr, pesoPromedio: props.peso, muestra: props.muestra || 10 };
         break;
       case 'vacuna':
         const vacuna = this.vacunas().find(v => v.nombre === props.titulo);
-        this.form = { fecha: event.startStr, vacuna_id: vacuna?.id || '', notas: props.notas || '' };
+        this.form = { fecha: event.startStr, catalogoVacunaId: vacuna?.id || '', notas: props.notas || '' };
         break;
       case 'antibiotico':
         const antib = this.antibioticos().find(a => a.nombre === props.titulo);
-        this.form = { fecha: event.startStr, catalogo_id: antib?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
+        this.form = { fecha: event.startStr, catalogoId: antib?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
         break;
       case 'vitamina':
         const vit = this.vitaminas().find(v => v.nombre === props.titulo);
-        this.form = { fecha: event.startStr, catalogo_id: vit?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
+        this.form = { fecha: event.startStr, catalogoId: vit?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
         break;
       case 'desinfectante':
         const des = this.desinfectantes().find(d => d.nombre === props.titulo);
-        this.form = { fecha: event.startStr, catalogo_id: des?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
+        this.form = { fecha: event.startStr, catalogoId: des?.id || '', cantidad: props.cantidad || 0, notas: props.notas || '' };
         break;
     }
     
@@ -799,7 +797,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
   setModalMode(mode: 'select' | 'mortalidad' | 'consumo' | 'pesaje' | 'vacuna' | 'antibiotico' | 'vitamina' | 'desinfectante'): void {
     this.modalMode.set(mode);
     if (mode === 'mortalidad') this.form = { cantidad: 1, causa: '' };
-    if (mode === 'consumo') this.form = { cantidad_kg: 0 };
+    if (mode === 'consumo') this.form = { cantidadKg: 0 };
     if (mode === 'pesaje') this.form = { muestra: 10 };
     if (mode === 'vacuna') this.form = { notas: '' };
     if (mode === 'antibiotico') this.form = { cantidad: 0, notas: '' };
@@ -817,7 +815,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
 
   async saveEvent(): Promise<void> {
     const currentLote = this.lote();
-    if (!currentLote) return;
+    if (!currentLote || !currentLote.id) return;
     const fecha = this.form.fecha;
     const editingId = this.editingEventId();
 
@@ -825,50 +823,46 @@ export class TimelineComponent implements OnInit, OnDestroy {
       switch (this.modalMode()) {
         case 'mortalidad':
           if (!this.form.cantidad || this.form.cantidad < 1) { alert('Cantidad inválida'); return; }
-          if (editingId) { await this.supabaseUpdate('mortalidades', editingId, { fecha, cantidad: this.form.cantidad, causa: this.form.causa }); }
-          else { await this.lotService.createMortalidad({ lote_id: currentLote.id!, fecha, cantidad: this.form.cantidad, causa: this.form.causa }); }
+          if (editingId) { await this.lotService.deleteMortalidad(editingId, currentLote.id); await this.lotService.createMortalidad({ loteId: currentLote.id, fecha, cantidad: this.form.cantidad, causa: this.form.causa }); }
+          else { await this.lotService.createMortalidad({ loteId: currentLote.id, fecha, cantidad: this.form.cantidad, causa: this.form.causa }); }
           break;
         case 'consumo':
-          if (!this.form.cantidad_kg || this.form.cantidad_kg <= 0) { alert('Cantidad inválida'); return; }
-          if (editingId) { await this.supabaseUpdate('consumo_diario', editingId, { fecha, cantidad_kg: this.form.cantidad_kg, etapa: currentLote.etapa_actual }); }
-          else { await this.lotService.createConsumo({ lote_id: currentLote.id!, fecha, cantidad_kg: this.form.cantidad_kg, etapa: currentLote.etapa_actual }); }
+          if (!this.form.cantidadKg || this.form.cantidadKg <= 0) { alert('Cantidad inválida'); return; }
+          if (editingId) { await this.lotService.deleteConsumo(editingId); await this.lotService.createConsumo({ loteId: currentLote.id, fecha, cantidadKg: this.form.cantidadKg, etapa: currentLote.etapaActual }); }
+          else { await this.lotService.createConsumo({ loteId: currentLote.id, fecha, cantidadKg: this.form.cantidadKg, etapa: currentLote.etapaActual }); }
           break;
         case 'pesaje':
-          if (!this.form.peso_promedio || this.form.peso_promedio <= 0) { alert('Peso inválido'); return; }
-          if (editingId) { await this.supabaseUpdate('pesajes', editingId, { fecha, peso_promedio: this.form.peso_promedio, muestra: this.form.muestra || 10 }); }
-          else { await this.lotService.createPesaje({ lote_id: currentLote.id!, fecha, peso_promedio: this.form.peso_promedio, muestra: this.form.muestra || 10 }); }
+          if (!this.form.pesoPromedio || this.form.pesoPromedio <= 0) { alert('Peso inválido'); return; }
+          if (editingId) { await this.lotService.deletePesaje(editingId); await this.lotService.createPesaje({ loteId: currentLote.id, fecha, pesoPromedio: this.form.pesoPromedio, muestra: this.form.muestra || 10 }); }
+          else { await this.lotService.createPesaje({ loteId: currentLote.id, fecha, pesoPromedio: this.form.pesoPromedio, muestra: this.form.muestra || 10 }); }
           break;
         case 'vacuna':
-          if (!this.form.vacuna_id) { alert('Selecciona una疫苗'); return; }
-          const vacuna = this.vacunas().find(v => v.id === this.form.vacuna_id);
-          if (editingId) { await this.supabaseUpdate('vacunas_aplicadas', editingId, { fecha: this.form.fecha, notas: this.form.notas }); }
-          else { await this.lotService.createVacunaAplicada({ lote_id: currentLote.id!, catalogo_vacuna_id: this.form.vacuna_id, fecha, notas: this.form.notas }); }
+          if (!this.form.catalogoVacunaId) { alert('Selecciona una vacuna'); return; }
+          if (editingId) { await this.lotService.deleteVacunaAplicada(editingId); await this.lotService.createVacunaAplicada({ loteId: currentLote.id, catalogoVacunaId: this.form.catalogoVacunaId, fecha, notas: this.form.notas }); }
+          else { await this.lotService.createVacunaAplicada({ loteId: currentLote.id, catalogoVacunaId: this.form.catalogoVacunaId, fecha, notas: this.form.notas }); }
           break;
         case 'antibiotico':
-          if (!this.form.catalogo_id) { alert('Selecciona un antibiótico'); return; }
+          if (!this.form.catalogoId) { alert('Selecciona un antibiótico'); return; }
           if (!this.form.cantidad || this.form.cantidad <= 0) { alert('Cantidad inválida'); return; }
-          const antib = this.antibioticos().find(a => a.id === this.form.catalogo_id);
-          if (editingId) { await this.supabaseUpdate('antibiotico_aplicadas', editingId, { cantidad: this.form.cantidad, notas: this.form.notas }); }
-          else { await this.lotService.createAntibiotico({ lote_id: currentLote.id!, catalogo_id: this.form.catalogo_id, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          if (editingId) { await this.lotService.deleteAntibiotico(editingId); await this.lotService.createAntibiotico({ loteId: currentLote.id, catalogoId: this.form.catalogoId, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          else { await this.lotService.createAntibiotico({ loteId: currentLote.id, catalogoId: this.form.catalogoId, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
           break;
         case 'vitamina':
-          if (!this.form.catalogo_id) { alert('Selecciona una vitamina'); return; }
+          if (!this.form.catalogoId) { alert('Selecciona una vitamina'); return; }
           if (!this.form.cantidad || this.form.cantidad <= 0) { alert('Cantidad inválida'); return; }
-          const vit = this.vitaminas().find(v => v.id === this.form.catalogo_id);
-          if (editingId) { await this.supabaseUpdate('vitamina_aplicadas', editingId, { cantidad: this.form.cantidad, notas: this.form.notas }); }
-          else { await this.lotService.createVitamina({ lote_id: currentLote.id!, catalogo_id: this.form.catalogo_id, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          if (editingId) { await this.lotService.deleteVitamina(editingId); await this.lotService.createVitamina({ loteId: currentLote.id, catalogoId: this.form.catalogoId, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          else { await this.lotService.createVitamina({ loteId: currentLote.id, catalogoId: this.form.catalogoId, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
           break;
         case 'desinfectante':
-          if (!this.form.catalogo_id) { alert('Selecciona un desinfectante'); return; }
+          if (!this.form.catalogoId) { alert('Selecciona un desinfectante'); return; }
           if (!this.form.cantidad || this.form.cantidad <= 0) { alert('Cantidad inválida'); return; }
-          const des = this.desinfectantes().find(d => d.id === this.form.catalogo_id);
-          if (editingId) { await this.supabaseUpdate('desinfectante_aplicadas', editingId, { cantidad: this.form.cantidad, notas: this.form.notas }); }
-          else { await this.lotService.createDesinfectante({ lote_id: currentLote.id!, catalogo_id: this.form.catalogo_id, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          if (editingId) { await this.lotService.deleteDesinfectante(editingId); await this.lotService.createDesinfectante({ loteId: currentLote.id, catalogoId: this.form.catalogoId, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
+          else { await this.lotService.createDesinfectante({ loteId: currentLote.id, catalogoId: this.form.catalogoId, cantidad: this.form.cantidad, fecha, notas: this.form.notas }); }
           break;
       }
-      
+
       this.closeModal();
-      await this.loadLote(currentLote.id!);
+      await this.loadLote(currentLote.id);
     } catch (e: any) {
       alert('Error: ' + e.message);
     }
@@ -881,24 +875,35 @@ export class TimelineComponent implements OnInit, OnDestroy {
     if (!confirm('¿Eliminar este registro?')) return;
 
     try {
-      const tableMap: any = { mortalidad: 'mortalidades', consumo: 'consumo_diario', pesaje: 'pesajes', vaccine: 'vaccunas_aplicadas', antibiotico: 'antibiotico_aplicadas', vitamina: 'vitamina_aplicadas', disinfectante: 'desinfectante_aplicadas' };
-      await this.supabaseDelete(tableMap[tipo], editingId);
-      this.closeModal();
       const currentLote = this.lote();
-      if (currentLote) await this.loadLote(currentLote.id!);
+      switch (tipo) {
+        case 'mortalidad':
+          if (currentLote?.id) await this.lotService.deleteMortalidad(editingId, currentLote.id);
+          break;
+        case 'consumo':
+          await this.lotService.deleteConsumo(editingId);
+          break;
+        case 'pesaje':
+          await this.lotService.deletePesaje(editingId);
+          break;
+        case 'vacuna':
+          await this.lotService.deleteVacunaAplicada(editingId);
+          break;
+        case 'antibiotico':
+          await this.lotService.deleteAntibiotico(editingId);
+          break;
+        case 'vitamina':
+          await this.lotService.deleteVitamina(editingId);
+          break;
+        case 'desinfectante':
+          await this.lotService.deleteDesinfectante(editingId);
+          break;
+      }
+      this.closeModal();
+      if (currentLote?.id) await this.loadLote(currentLote.id);
     } catch (e: any) {
       alert('Error: ' + e.message);
     }
-  }
-
-  private async supabaseDelete(table: string, id: string): Promise<void> {
-    const { error } = await this.supabase.client.from(table).delete().eq('id', id);
-    if (error) throw error;
-  }
-
-  private async supabaseUpdate(table: string, id: string, data: any): Promise<void> {
-    const { error } = await this.supabase.client.from(table).update(data).eq('id', id);
-    if (error) throw error;
   }
 
   goBack(): void {
