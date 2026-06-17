@@ -221,10 +221,17 @@ import { NotificationService, Notification } from '../../core/services/notificat
       transition: all 0.2s;
       min-height: 44px;
       white-space: nowrap;
+      overflow: hidden;
     }
     .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
     .nav-item.active { background: #FFC107; color: #2B2B2B; font-weight: 600; }
     .nav-icon { font-size: 1.125rem; width: 24px; text-align: center; flex-shrink: 0; }
+    .nav-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .sidebar-footer {
       padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1);
       display: flex; align-items: center; gap: 0.75rem;
