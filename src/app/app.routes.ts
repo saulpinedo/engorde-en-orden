@@ -27,7 +27,8 @@ export const routes: Routes = [
       { path: 'clientes', loadComponent: () => import('./features/clientes/clientes.component').then(m => m.ClientesComponent) },
       { path: 'ventas', loadComponent: () => import('./features/ventas/ventas.component').then(m => m.VentasComponent) },
       { path: 'ventas/:loteId', loadComponent: () => import('./features/ventas/ventas.component').then(m => m.VentasComponent) },
-      { path: 'pagos', loadComponent: () => import('./features/pagos/pagos.component').then(m => m.PagosComponent) }
+      { path: 'pagos', loadComponent: () => import('./features/pagos/pagos.component').then(m => m.PagosComponent) },
+      { path: 'gastos-operativos', loadComponent: () => import('./features/gastos-operativos/gastos-operativos.component').then(m => m.GastosOperativosComponent) }
     ]
   },
   { path: '**', redirectTo: 'dashboard' }

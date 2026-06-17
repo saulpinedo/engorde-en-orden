@@ -1,21 +1,21 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { CalendarOptions, EventClickArg, EventInput } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
-import { LotService, Lote, Mortalidad, ConsumoDiario, Pesaje, Vacuna, Hito, VacunaAplicada, Antibiotico, Vitamina, Desinfectante } from '../../core/services/lot.service';
+import { LotService, Lote, Mortalidad, ConsumoDiario, Pesaje, Vacuna, Hito, VacunaAplicada, Antibiotico, Vitamina, Desinfectante, GastoOperativo, GastoCategoria } from '../../core/services/lot.service';
 import { RefreshService } from '../../core/services/refresh.service';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 
 @Component({
   selector: 'app-timeline',
   standalone: true,
-  imports: [CommonModule, FormsModule, FullCalendarModule],
+  imports: [CommonModule, FormsModule, FullCalendarModule, RouterLink],
   template: `
     <div class="page-container">
       @if (loading()) {
@@ -175,6 +175,57 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
 
             <div class="calendar-card">
               <full-calendar [options]="calendarOptions"></full-calendar>
+            </div>
+
+            <!-- Rentabilidad del lote -->
+            <div class="rentabilidad-card" [class.ganancia-pos]="rentabilidad().ganancia >= 0" [class.ganancia-neg]="rentabilidad().ganancia < 0">
+              <h3>📊 Rentabilidad del Lote</h3>
+              <div class="rent-grid">
+                <div class="rent-item">
+                  <span class="rent-label">Total gastado</span>
+                  <span class="rent-value text-danger">💸 {{ rentabilidad().totalGastos | number:'1.2-2' }} Bs</span>
+                </div>
+                <div class="rent-item">
+                  <span class="rent-label">Total vendido</span>
+                  <span class="rent-value text-success">💰 {{ rentabilidad().totalVentas | number:'1.2-2' }} Bs</span>
+                </div>
+                <div class="rent-item">
+                  <span class="rent-label">Ganancia neta</span>
+                  <span class="rent-value big">{{ rentabilidad().ganancia | number:'1.2-2' }} Bs</span>
+                </div>
+                <div class="rent-item">
+                  <span class="rent-label">ROI</span>
+                  <span class="rent-value big">{{ rentabilidad().roi | number:'1.1-1' }}%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gastos del lote -->
+            <div class="gastos-card">
+              <div class="gastos-header">
+                <h3>💸 Gastos Operativos</h3>
+                <button class="btn-mini" [routerLink]="['/gastos-operativos']">Ver todos →</button>
+              </div>
+              <div class="gastos-stats">
+                <span><strong>{{ totalGastos() | number:'1.2-2' }} Bs</strong> gastados en <strong>{{ cantidadGastos() }}</strong> gastos</span>
+              </div>
+              @if (ultimosGastos().length > 0) {
+                <table class="mini-table">
+                  <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Monto</th></tr></thead>
+                  <tbody>
+                    @for (g of ultimosGastos(); track g.id) {
+                      <tr>
+                        <td>{{ g.fecha | date:'dd/MM' }}</td>
+                        <td><span class="mini-badge" [class]="'mini-' + g.categoria.toLowerCase()">{{ categoriaLabel(g.categoria) }}</span></td>
+                        <td>{{ g.descripcion }}</td>
+                        <td class="text-right"><strong>{{ g.monto | number:'1.2-2' }} Bs</strong></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="text-muted">Aún no hay gastos registrados para este lote. <a [routerLink]="['/gastos-operativos']">Registrar el primero →</a></p>
+              }
             </div>
           </main>
         </div>
@@ -361,6 +412,36 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
     :host ::ng-deep .fc-day-today { background: rgba(255,193,7,0.15) !important; }
     :host ::ng-deep .fc-event { cursor: pointer; padding: 2px 4px; font-size: 0.75rem; }
     :host ::ng-deep .fc-daygrid-event { padding: 2px 6px; }
+
+    .rentabilidad-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-top: 1.5rem; border-left: 4px solid #ccc; }
+    .rentabilidad-card.ganancia-pos { border-left-color: #28a745; }
+    .rentabilidad-card.ganancia-neg { border-left-color: #D32F2F; }
+    .rentabilidad-card h3 { margin: 0 0 1rem 0; color: #2B2B2B; font-size: 1.1rem; }
+    .rent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+    .rent-item { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; }
+    .rent-label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
+    .rent-value { font-size: 1.1rem; font-weight: 600; color: #2B2B2B; }
+    .rent-value.big { font-size: 1.5rem; }
+    .text-danger { color: #D32F2F; }
+    .text-success { color: #28a745; }
+    .text-right { text-align: right; }
+    .text-muted { color: #666; }
+
+    .gastos-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-top: 1.5rem; }
+    .gastos-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .gastos-header h3 { margin: 0; color: #2B2B2B; font-size: 1.1rem; }
+    .btn-mini { background: none; border: 1px solid #FFC107; color: #2B2B2B; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; text-decoration: none; }
+    .btn-mini:hover { background: #FFC107; }
+    .gastos-stats { padding: 0.5rem 0.75rem; background: #fff3cd; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.9rem; }
+    .mini-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .mini-table th, .mini-table td { padding: 0.4rem 0.5rem; text-align: left; border-bottom: 1px solid #eee; }
+    .mini-table th { background: #f8f9fa; font-weight: 600; font-size: 0.75rem; }
+    .mini-badge { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+    .mini-alimento { background: #d4edda; color: #155724; }
+    .mini-insumos { background: #cce5ff; color: #004085; }
+    .mini-mano_obra { background: #fff3cd; color: #856404; }
+    .mini-mantenimiento { background: #f8d7da; color: #D32F2F; }
+    .mini-otros { background: #e2d9f3; color: #5a32a3; }
   `]
 })
 export class TimelineComponent implements OnInit, OnDestroy {
@@ -405,6 +486,14 @@ export class TimelineComponent implements OnInit, OnDestroy {
   antibioticosAplicadosCache: Antibiotico[] = [];
   vitaminasAplicadasCache: Vitamina[] = [];
   desinfectantesAplicadosCache: Desinfectante[] = [];
+
+  // Gastos / rentabilidad del lote (sección debajo del calendario)
+  ultimosGastos = signal<GastoOperativo[]>([]);
+  totalGastos = signal<number>(0);
+  cantidadGastos = signal<number>(0);
+  rentabilidad = signal<{ totalGastos: number; totalVentas: number; ganancia: number; roi: number }>({
+    totalGastos: 0, totalVentas: 0, ganancia: 0, roi: 0
+  });
 
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
@@ -479,6 +568,9 @@ export class TimelineComponent implements OnInit, OnDestroy {
         this.antibioticos.set(antibioticosData);
         this.vitaminas.set(vitaminasData);
         this.desinfectantes.set(desinfectantesData);
+
+        // Cargar gastos + rentabilidad del lote (no bloquea el render principal)
+        this.loadGastosRentabilidad(id);
       } else {
         console.warn('No loteData returned for id:', id);
       }
@@ -487,6 +579,33 @@ export class TimelineComponent implements OnInit, OnDestroy {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  async loadGastosRentabilidad(loteId: string): Promise<void> {
+    try {
+      const [gastos, resumen, rent] = await Promise.all([
+        this.lotService.getGastos(loteId),
+        this.lotService.getResumenGastosPorLote(loteId),
+        this.lotService.getRentabilidadPorLote(loteId)
+      ]);
+      this.ultimosGastos.set(gastos.slice(0, 5));
+      this.totalGastos.set(resumen.total);
+      this.cantidadGastos.set(resumen.cantidad);
+      this.rentabilidad.set(rent);
+    } catch (e) {
+      console.warn('No se pudieron cargar gastos/rentabilidad del lote:', e);
+    }
+  }
+
+  categoriaLabel(cat: GastoCategoria): string {
+    const map: Record<GastoCategoria, string> = {
+      ALIMENTO: '🌽 Alimento',
+      INSUMOS: '💊 Insumos',
+      MANO_OBRA: '👷 Mano',
+      MANTENIMIENTO: '🔧 Mant.',
+      OTROS: '📦 Otros'
+    };
+    return map[cat] || cat;
   }
 
   async buildEvents(lote: Lote): Promise<EventInput[]> {

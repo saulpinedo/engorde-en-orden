@@ -1,0 +1,9 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Comprobantes de gastos operativos, organizados por lote.
+    match /gastos/{loteId}/{file=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

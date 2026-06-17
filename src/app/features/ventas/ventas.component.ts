@@ -93,6 +93,28 @@ import { format } from 'date-fns';
             </div>
           </div>
         </div>
+
+        <div class="rentabilidad-card" [class.ganancia-pos]="rentabilidadLote().ganancia >= 0" [class.ganancia-neg]="rentabilidadLote().ganancia < 0">
+          <h3>📊 Rentabilidad</h3>
+          <div class="rent-grid">
+            <div class="rent-item">
+              <span class="rent-label">Total gastado</span>
+              <span class="rent-value text-danger">💸 {{ rentabilidadLote().totalGastos | number:'1.2-2' }} Bs</span>
+            </div>
+            <div class="rent-item">
+              <span class="rent-label">Total vendido</span>
+              <span class="rent-value text-success">💰 {{ rentabilidadLote().totalVentas | number:'1.2-2' }} Bs</span>
+            </div>
+            <div class="rent-item">
+              <span class="rent-label">Ganancia neta</span>
+              <span class="rent-value big">{{ rentabilidadLote().ganancia | number:'1.2-2' }} Bs</span>
+            </div>
+            <div class="rent-item">
+              <span class="rent-label">ROI</span>
+              <span class="rent-value big">{{ rentabilidadLote().roi | number:'1.1-1' }}%</span>
+            </div>
+          </div>
+        </div>
         
         <div class="ventas-lote-header">
           <h3>Todas las Ventas del Lote</h3>
@@ -389,6 +411,19 @@ import { format } from 'date-fns';
     .stat-label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 0.25rem; }
     .stat-value { font-size: 1.5rem; font-weight: 700; }
     .stat-value.highlight { color: #28a745; }
+    .stat-value.warning { color: #FF9800; }
+
+    .rentabilidad-card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #ccc; }
+    .rentabilidad-card.ganancia-pos { border-left-color: #28a745; }
+    .rentabilidad-card.ganancia-neg { border-left-color: #D32F2F; }
+    .rentabilidad-card h3 { margin: 0 0 1rem 0; color: #2B2B2B; font-size: 1.1rem; }
+    .rent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+    .rent-item { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; }
+    .rent-label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
+    .rent-value { font-size: 1.1rem; font-weight: 600; color: #2B2B2B; }
+    .rent-value.big { font-size: 1.5rem; }
+    .text-danger { color: #D32F2F; }
+    .text-success { color: #28a745; }
     .stat-value.warning { color: #D32F2F; }
     
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
@@ -429,6 +464,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   filtroEstado = 'todas';
   pesadas = signal<DetallePesada[]>([]);
   resumenLote = signal<{ totalBs: number; totalKg: number; pendientes: number }>({ totalBs: 0, totalKg: 0, pendientes: 0 });
+  rentabilidadLote = signal<{ totalGastos: number; totalVentas: number; ganancia: number; roi: number }>({ totalGastos: 0, totalVentas: 0, ganancia: 0, roi: 0 });
   
   ventaActual = signal<Venta | null>(null);
   pagoModalVisible = signal(false);
@@ -477,7 +513,10 @@ export class VentasComponent implements OnInit, OnDestroy {
         
         const resumen = await this.lotService.getResumenVentas(this.loteId);
         this.resumenLote.set(resumen);
-        
+
+        const rent = await this.lotService.getRentabilidadPorLote(this.loteId);
+        this.rentabilidadLote.set(rent);
+
         const ventas = await this.lotService.getVentas(this.loteId);
         const hoy = format(new Date(), 'yyyy-MM-dd');
         this.ventasDelDia.set(ventas.filter(v => v.fecha === hoy));

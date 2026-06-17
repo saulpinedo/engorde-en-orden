@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { differenceInDays } from 'date-fns';
 import { FirestoreService } from './firestore.service';
 import { RefreshService } from './refresh.service';
+import { StorageService } from './storage.service';
 import { doc, collection, serverTimestamp, writeBatch, setDoc, updateDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
 
 // ──────────────── MODELOS (camelCase) ────────────────
@@ -262,6 +263,25 @@ export interface FormulaDetalle {
   ingredienteUnidad?: string;
 }
 
+export type GastoCategoria =
+  | 'ALIMENTO' | 'INSUMOS' | 'MANO_OBRA' | 'MANTENIMIENTO' | 'OTROS';
+
+export interface GastoOperativo {
+  id?: string;
+  fecha: string;
+  loteId: string;
+  loteNombre?: string;       // denormalizado
+  granjaNombre?: string;     // denormalizado
+  categoria: GastoCategoria;
+  descripcion: string;
+  monto: number;
+  proveedor?: string;
+  fotoComprobanteUrl?: string;
+  fotoPath?: string;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 // ──────────────── SERVICIO ────────────────
 
 @Injectable({
@@ -271,6 +291,7 @@ export class LotService {
   private loadingSignal = signal(false);
   private refresh = inject(RefreshService);
   private fs = inject(FirestoreService);
+  private storage = inject(StorageService);
 
   // ──────────── helpers de etapa ────────────
   getEtapaActual(diasVida: number): 'INICIO' | 'CRECIMIENTO' | 'ENGORDE' {
@@ -1003,5 +1024,107 @@ export class LotService {
       if (v.estado !== 'CANCELADO') resumen.pendientes += (v.totalBs || 0);
     });
     return resumen;
+  }
+
+  // ──────────── Gastos Operativos ────────────
+  async getGastos(loteId?: string): Promise<GastoOperativo[]> {
+    if (loteId) {
+      return this.fs.whereEq<GastoOperativo>('gastosOperativos', 'loteId', loteId, 'fecha', 'desc');
+    }
+    return this.fs.getAll<GastoOperativo>('gastosOperativos', 'fecha', 'desc');
+  }
+
+  async createGasto(gasto: Partial<GastoOperativo>): Promise<GastoOperativo> {
+    if (!gasto.loteId) throw new Error('loteId es requerido');
+    let loteNombre = gasto.loteNombre;
+    let granjaNombre = gasto.granjaNombre;
+    if (!loteNombre || !granjaNombre) {
+      const lote = await this.fs.getById<Lote>('lotes', gasto.loteId);
+      if (lote) {
+        loteNombre = lote.nombre;
+        if (lote.galponId) {
+          const galpon = await this.fs.getById<Galpon>('galpones', lote.galponId);
+          if (galpon?.granjaId) {
+            const granja = await this.fs.getById<Granja>('granjas', galpon.granjaId);
+            granjaNombre = granja?.nombre;
+          }
+        }
+      }
+    }
+    const created = await this.fs.create<GastoOperativo>('gastosOperativos', {
+      ...gasto,
+      loteNombre,
+      granjaNombre
+    });
+    this.refresh.triggerRefresh('gastos');
+    return created;
+  }
+
+  async updateGasto(id: string, gasto: Partial<GastoOperativo>): Promise<GastoOperativo> {
+    await this.fs.update('gastosOperativos', id, gasto);
+    this.refresh.triggerRefresh('gastos');
+    return (await this.fs.getById<GastoOperativo>('gastosOperativos', id))!;
+  }
+
+  /**
+   * Borra el gasto y, si tenía foto en Storage, también la borra.
+   * La foto se borra de forma tolerante: si falla, igual se completa
+   * la operación principal (queda el log para limpieza manual).
+   */
+  async deleteGasto(id: string): Promise<void> {
+    const existing = await this.fs.getById<GastoOperativo>('gastosOperativos', id);
+    await this.fs.remove('gastosOperativos', id);
+    if (existing?.fotoPath) {
+      try {
+        await this.storage.deleteFile(existing.fotoPath);
+      } catch (e) {
+        console.warn('No se pudo borrar la foto del gasto:', existing.fotoPath, e);
+      }
+    }
+    this.refresh.triggerRefresh('gastos');
+  }
+
+  async getResumenGastosPorLote(loteId: string): Promise<{
+    total: number;
+    cantidad: number;
+    promedio: number;
+    porCategoria: { categoria: GastoCategoria; total: number }[];
+  }> {
+    const gastos = await this.getGastos(loteId);
+    const total = gastos.reduce((sum, g) => sum + (g.monto || 0), 0);
+    const cantidad = gastos.length;
+    const promedio = cantidad > 0 ? total / cantidad : 0;
+
+    const porCategoriaMap = new Map<GastoCategoria, number>();
+    gastos.forEach(g => {
+      porCategoriaMap.set(g.categoria, (porCategoriaMap.get(g.categoria) || 0) + (g.monto || 0));
+    });
+    const porCategoria: { categoria: GastoCategoria; total: number }[] =
+      Array.from(porCategoriaMap.entries())
+        .map(([categoria, t]) => ({ categoria, total: t }))
+        .sort((a, b) => b.total - a.total);
+
+    return { total, cantidad, promedio, porCategoria };
+  }
+
+  /**
+   * Rentabilidad por lote: cruza gastos operativos + ventas para mostrar
+   * ganancia neta y ROI%. Sirve para evaluar si un engorde dejó ganancia.
+   */
+  async getRentabilidadPorLote(loteId: string): Promise<{
+    totalGastos: number;
+    totalVentas: number;
+    ganancia: number;
+    roi: number;
+  }> {
+    const [resumenGastos, resumenVentas] = await Promise.all([
+      this.getResumenGastosPorLote(loteId),
+      this.getResumenVentas(loteId)
+    ]);
+    const totalGastos = resumenGastos.total;
+    const totalVentas = resumenVentas.totalBs;
+    const ganancia = totalVentas - totalGastos;
+    const roi = totalGastos > 0 ? (ganancia / totalGastos) * 100 : 0;
+    return { totalGastos, totalVentas, ganancia, roi };
   }
 }
