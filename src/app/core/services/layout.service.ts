@@ -6,13 +6,27 @@ interface MenuItem {
   routerLink: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class LayoutService {
   private collapsedSignal = signal(false);
   collapsed = this.collapsedSignal.asReadonly();
 
+  /** Estado del drawer en mobile (off-canvas). Independiente de collapsed. */
+  private mobileOpenSignal = signal(false);
+  mobileOpen = this.mobileOpenSignal.asReadonly();
+
   toggleSidebar(): void {
     this.collapsedSignal.update(v => !v);
+  }
+
+  toggleMobileSidebar(): void {
+    this.mobileOpenSignal.update(v => !v);
+  }
+
+  closeMobileSidebar(): void {
+    this.mobileOpenSignal.set(false);
   }
 
   getMenuItems(): MenuItem[] {
@@ -23,6 +37,7 @@ export class LayoutService {
       { label: 'Lotes', icon: '🐣', routerLink: '/lotes' },
       { label: 'Timeline', icon: '📅', routerLink: '/timeline' },
       { label: 'Ventas', icon: '💰', routerLink: '/ventas' },
+      { label: 'Gastos Operativos', icon: '💸', routerLink: '/gastos-operativos' },
       { label: 'Clientes', icon: '👥', routerLink: '/clientes' },
       { label: 'Cobrar', icon: '📝', routerLink: '/pagos' },
       { label: 'Vacunas', icon: '💉', routerLink: '/vacunas' },

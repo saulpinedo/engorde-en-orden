@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
 import { LayoutService } from '../../core/services/layout.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService, Notification } from '../../core/services/notification.service';
@@ -14,7 +15,7 @@ import { NotificationService, Notification } from '../../core/services/notificat
     <div class="app-container">
       <header class="topbar">
         <div class="topbar-left">
-          <button class="menu-toggle" (click)="toggleSidebar()">
+          <button class="menu-toggle" (click)="onMenuToggle()" aria-label="Menú">
             <span>&#9776;</span>
           </button>
           <div class="logo">
@@ -22,15 +23,15 @@ import { NotificationService, Notification } from '../../core/services/notificat
             <span class="logo-text">EngordeEnOrden</span>
           </div>
         </div>
-        
+
         <div class="topbar-right">
-          <button class="notification-btn" (click)="showNotifications = !showNotifications">
+          <button class="notification-btn" (click)="showNotifications = !showNotifications" aria-label="Notificaciones">
             <span>🔔</span>
             @if (notificationService.unreadCount() > 0) {
               <span class="badge">{{ notificationService.unreadCount() }}</span>
             }
           </button>
-          
+
           @if (showNotifications) {
             <div class="notification-panel">
               <h4>Notificaciones</h4>
@@ -45,28 +46,38 @@ import { NotificationService, Notification } from '../../core/services/notificat
               }
             </div>
           }
-          
+
           <div class="user-menu">
-            <span class="user-avatar">A</span>
+            <span class="user-avatar">{{ userInitial() }}</span>
             <span class="user-email">{{ authService.user()?.email }}</span>
             <button class="logout-btn" (click)="logout()">Cerrar</button>
           </div>
         </div>
       </header>
-      
-      <aside class="sidebar" [class.collapsed]="layoutService.collapsed()">
+
+      <!-- Backdrop mobile: solo visible cuando el drawer está abierto -->
+      @if (layoutService.mobileOpen()) {
+        <div class="sidebar-backdrop" (click)="layoutService.closeMobileSidebar()"></div>
+      }
+
+      <aside class="sidebar"
+             [class.collapsed]="layoutService.collapsed() && !layoutService.mobileOpen()"
+             [class.mobile-open]="layoutService.mobileOpen()">
         <nav class="sidebar-nav">
           @for (item of layoutService.getMenuItems(); track item.routerLink) {
-            <a [routerLink]="item.routerLink" routerLinkActive="active" class="nav-item">
+            <a [routerLink]="item.routerLink"
+               routerLinkActive="active"
+               class="nav-item"
+               (click)="layoutService.closeMobileSidebar()">
               <span class="nav-icon">{{ item.icon }}</span>
               <span class="nav-label">{{ item.label }}</span>
             </a>
           }
         </nav>
-        
+
         <div class="sidebar-footer">
           <span class="brand-icon">🐔</span>
-          @if (!layoutService.collapsed()) {
+          @if (!layoutService.collapsed() || layoutService.mobileOpen()) {
             <div class="brand-text">
               <span class="brand-name">EngordeEnOrden</span>
               <span class="brand-tagline">Tecnología para crecer mejor</span>
@@ -74,14 +85,17 @@ import { NotificationService, Notification } from '../../core/services/notificat
           }
         </div>
       </aside>
-      
-      <main class="main-content" [class.sidebar-collapsed]="layoutService.collapsed()">
+
+      <main class="main-content"
+            [class.sidebar-collapsed]="layoutService.collapsed() && !layoutService.mobileOpen()">
         <router-outlet></router-outlet>
       </main>
     </div>
   `,
   styles: [`
     .app-container { min-height: 100vh; }
+
+    /* ────────── Topbar ────────── */
     .topbar {
       position: fixed;
       top: 0;
@@ -97,21 +111,37 @@ import { NotificationService, Notification } from '../../core/services/notificat
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .topbar-left { display: flex; align-items: center; gap: 1rem; }
-    .menu-toggle { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+    .menu-toggle {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    .menu-toggle:hover { color: #FFC107; }
     .logo { display: flex; align-items: center; gap: 0.5rem; }
     .logo-icon { font-size: 1.5rem; }
-    .logo-text { color: #FFC107; font-size: 1.25rem; font-weight: 700; }
-    .topbar-right { display: flex; align-items: center; gap: 1rem; }
-    .notification-btn { background: none; border: none; font-size: 1.25rem; cursor: pointer; position: relative; }
+    .logo-text { color: #FFC107; font-size: 1.25rem; font-weight: 700; white-space: nowrap; }
+    .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+    .notification-btn {
+      background: none; border: none; font-size: 1.25rem; cursor: pointer;
+      position: relative; min-width: 44px; min-height: 44px; padding: 0.5rem;
+    }
+    .notification-btn:hover { color: #FFC107; }
     .badge {
       position: absolute;
-      top: -5px;
-      right: -5px;
+      top: 4px;
+      right: 4px;
       background: #D32F2F;
       color: white;
       font-size: 0.7rem;
       padding: 2px 6px;
       border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
     }
     .notification-panel {
       position: absolute;
@@ -134,18 +164,33 @@ import { NotificationService, Notification } from '../../core/services/notificat
     .no-notifications { padding: 2rem; text-align: center; color: #999; }
     .user-menu { display: flex; align-items: center; gap: 0.5rem; }
     .user-avatar {
-      width: 36px;
-      height: 36px;
-      background: #FFC107;
-      color: #2B2B2B;
+      width: 36px; height: 36px;
+      background: #FFC107; color: #2B2B2B;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; flex-shrink: 0;
     }
-    .user-email { color: white; font-size: 0.875rem; }
-    .logout-btn { background: #D32F2F; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    .user-email { color: white; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+    .logout-btn {
+      background: #D32F2F; color: white; border: none;
+      padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; white-space: nowrap;
+    }
+    .logout-btn:hover { background: #b71c1c; }
+
+    /* ────────── Backdrop mobile ────────── */
+    .sidebar-backdrop {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 998;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ────────── Sidebar (desktop por defecto) ────────── */
     .sidebar {
       position: fixed;
       top: 60px;
@@ -159,7 +204,11 @@ import { NotificationService, Notification } from '../../core/services/notificat
       z-index: 999;
     }
     .sidebar.collapsed { width: 80px; }
-    .sidebar-nav { flex: 1; padding: 1rem 0.75rem; }
+    .sidebar.collapsed .nav-label,
+    .sidebar.collapsed .brand-text {
+      display: none;
+    }
+    .sidebar-nav { flex: 1; padding: 1rem 0.75rem; overflow-y: auto; }
     .nav-item {
       display: flex;
       align-items: center;
@@ -170,14 +219,22 @@ import { NotificationService, Notification } from '../../core/services/notificat
       border-radius: 8px;
       margin-bottom: 0.25rem;
       transition: all 0.2s;
+      min-height: 44px;
+      white-space: nowrap;
     }
     .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
     .nav-item.active { background: #FFC107; color: #2B2B2B; font-weight: 600; }
-    .nav-icon { font-size: 1.125rem; width: 24px; text-align: center; }
-    .sidebar-footer { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 0.75rem; }
-    .brand-icon { font-size: 2rem; }
-    .brand-name { color: #FFC107; font-weight: 700; font-size: 1rem; display: block; }
-    .brand-tagline { color: rgba(255,255,255,0.5); font-size: 0.75rem; }
+    .nav-icon { font-size: 1.125rem; width: 24px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer {
+      padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .brand-icon { font-size: 2rem; flex-shrink: 0; }
+    .brand-text { display: flex; flex-direction: column; overflow: hidden; }
+    .brand-name { color: #FFC107; font-weight: 700; font-size: 1rem; white-space: nowrap; }
+    .brand-tagline { color: rgba(255,255,255,0.5); font-size: 0.75rem; white-space: nowrap; }
+
+    /* ────────── Main content ────────── */
     .main-content {
       margin-left: 280px;
       margin-top: 60px;
@@ -185,43 +242,94 @@ import { NotificationService, Notification } from '../../core/services/notificat
       min-height: calc(100vh - 60px);
       background: #f8f9fa;
       transition: margin-left 0.3s ease;
+      overflow-x: hidden;
     }
     .main-content.sidebar-collapsed { margin-left: 80px; }
+
+    /* ────────── Mobile ≤ 768px ────────── */
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .main-content { margin-left: 0; }
+      .topbar { padding: 0 0.75rem; }
+      .logo-text { display: none; }
       .user-email { display: none; }
+      .logout-btn { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+
+      .sidebar {
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .sidebar.collapsed { width: 280px; }
+      .sidebar.collapsed.mobile-open .nav-label,
+      .sidebar.collapsed.mobile-open .brand-text {
+        display: flex;
+      }
+      .sidebar.collapsed:not(.mobile-open) .nav-label,
+      .sidebar.collapsed:not(.mobile-open) .brand-text {
+        display: none;
+      }
+
+      .main-content,
+      .main-content.sidebar-collapsed {
+        margin-left: 0;
+        padding: 1rem 0.75rem;
+      }
+    }
+
+    /* ────────── Mobile chico ≤ 480px ────────── */
+    @media (max-width: 480px) {
+      .topbar { padding: 0 0.5rem; }
+      .topbar-left { gap: 0.5rem; }
+      .topbar-right { gap: 0.5rem; }
+      .menu-toggle { min-width: 40px; min-height: 40px; padding: 0.4rem; }
+      .notification-btn { min-width: 40px; min-height: 40px; padding: 0.4rem; }
+      .user-avatar { width: 32px; height: 32px; font-size: 0.85rem; }
+      .logout-btn { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
+      .main-content { padding: 0.75rem 0.5rem; }
+
+      .notification-panel {
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+      }
     }
   `]
 })
-export class MainLayoutComponent implements OnInit {
+export class MainLayoutComponent implements OnInit, OnDestroy {
   layoutService = inject(LayoutService);
   authService = inject(AuthService);
   notificationService = inject(NotificationService);
+  private router = inject(Router);
+  private routerSub?: Subscription;
+
   showNotifications = false;
 
   ngOnInit(): void {
     this.notificationService.checkNotifications();
+    // Cerrar el drawer mobile al navegar a una nueva ruta
+    this.routerSub = this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => {
+        this.layoutService.closeMobileSidebar();
+        this.showNotifications = false;
+      });
   }
 
-  toggleSidebar(): void {
-    this.layoutService.toggleSidebar();
+  ngOnDestroy(): void {
+    this.routerSub?.unsubscribe();
   }
 
-  getIcon(label: string): string {
-    const icons: Record<string, string> = {
-      'Dashboard': '🏠',
-      'Granjas': '🏢',
-      'Galpones': '📦',
-      'Lotes': '🐣',
-      'Timeline': '📅',
-      'Vacunas': '💉',
-      'Mortalidad': '⚠️',
-      'Consumo': '🌽',
-      'Pesajes': '⚖️',
-      'Fórmulas': '📋'
-    };
-    return icons[label] || '•';
+  onMenuToggle(): void {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      this.layoutService.toggleMobileSidebar();
+    } else {
+      this.layoutService.toggleSidebar();
+    }
+  }
+
+  userInitial(): string {
+    const email = this.authService.user()?.email || '';
+    return email.charAt(0).toUpperCase() || '?';
   }
 
   onNotificationClick(n: Notification): void {
@@ -233,6 +341,4 @@ export class MainLayoutComponent implements OnInit {
   logout(): void {
     this.authService.signOut();
   }
-
-  private router = inject(Router);
 }
