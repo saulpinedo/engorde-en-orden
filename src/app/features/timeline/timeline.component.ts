@@ -524,8 +524,11 @@ export class TimelineComponent implements OnInit, OnDestroy {
       this.loading.set(false);
     }
     
-    this.refreshSub = this.refreshService.refresh$.subscribe(() => {
-      if (loteId) this.loadLote(loteId);
+    this.refreshSub = this.refreshService.refresh$.subscribe((feature: string) => {
+      if (loteId) {
+        this.loadLote(loteId);
+        if (feature === 'gastos') this.loadGastosRentabilidad(loteId);
+      }
     });
   }
 
@@ -593,7 +596,7 @@ export class TimelineComponent implements OnInit, OnDestroy {
       this.cantidadGastos.set(resumen.cantidad);
       this.rentabilidad.set(rent);
     } catch (e) {
-      console.warn('No se pudieron cargar gastos/rentabilidad del lote:', e);
+      console.error('Error cargando gastos/rentabilidad del lote (probable índice faltante en gastosOperativos):', e);
     }
   }
 

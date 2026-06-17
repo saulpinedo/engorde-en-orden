@@ -208,29 +208,37 @@ import { NotificationService, Notification } from '../../core/services/notificat
     .sidebar.collapsed .brand-text {
       display: none;
     }
-    .sidebar-nav { flex: 1; padding: 1rem 0.75rem; overflow-y: auto; }
+    .sidebar-nav { flex: 1; padding: 0.5rem 0.75rem; overflow-y: auto; }
     .nav-item {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.875rem 1rem;
+      padding: 0.55rem 0.85rem;
       color: rgba(255,255,255,0.7);
       text-decoration: none;
       border-radius: 8px;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.15rem;
       transition: all 0.2s;
-      min-height: 44px;
+      min-height: 36px;
       white-space: nowrap;
       overflow: hidden;
     }
     .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
     .nav-item.active { background: #FFC107; color: #2B2B2B; font-weight: 600; }
-    .nav-icon { font-size: 1.125rem; width: 24px; text-align: center; flex-shrink: 0; }
+    .nav-icon {
+      font-size: 1.1rem;
+      width: 22px;
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+      margin-right: 0.25rem;
+    }
     .nav-label {
       flex: 1;
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      font-size: 0.875rem;
     }
     .sidebar-footer {
       padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1);
