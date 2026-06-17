@@ -138,13 +138,7 @@ interface ResumenGastos {
                     </td>
                     <td>{{ g.descripcion }}</td>
                     <td>{{ g.proveedor || '-' }}</td>
-                    <td>
-                      @if (g.fotoComprobanteUrl) {
-                        <a [href]="g.fotoComprobanteUrl" target="_blank" title="Ver comprobante">📎</a>
-                      } @else {
-                        <span class="text-muted">-</span>
-                      }
-                    </td>
+                    <td><span class="text-muted">-</span></td>
                     <td class="text-right"><strong>{{ g.monto | number:'1.2-2' }} Bs</strong></td>
                     <td>
                       <button class="btn-icon" (click)="editGasto(g)" title="Editar">✏️</button>
@@ -209,6 +203,10 @@ interface ResumenGastos {
                 <input type="text" [(ngModel)]="form.proveedor" placeholder="Opcional" class="input-field" />
               </div>
             </div>
+            <!--
+            Upload de foto de comprobante deshabilitado por ahora (Storage cuesta plata).
+            Para reactivar: quitar este comentario y verificar que las reglas storage.rules
+            estén publicadas y StorageService.uploadComprobanteGasto siga disponible.
             <div class="form-group">
               <label>Comprobante (foto o PDF)</label>
               <input type="file" (change)="onFileSelected($event)" accept="image/*,application/pdf" class="input-field" />
@@ -226,6 +224,7 @@ interface ResumenGastos {
                 </div>
               }
             </div>
+            -->
             <div class="modal-actions">
               @if (editingGasto()) {
                 <button class="btn-danger" (click)="confirmDelete()">🗑️ Eliminar</button>

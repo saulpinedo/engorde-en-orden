@@ -96,21 +96,22 @@ export class FirestoreService {
   // ──────────── writes ────────────
   async create<T = any>(colName: string, data: Partial<T>): Promise<T & { id: string }> {
     const id = this.newId(colName);
-    const payload = {
+    const payload = this.stripUndefined({
       ...data,
       id,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    };
+    });
     await setDoc(this.docRef(colName, id), payload);
     return { id, ...data } as T & { id: string };
   }
 
   async update(colName: string, id: string, data: any): Promise<void> {
-    await updateDoc(this.docRef(colName, id), {
+    const payload = this.stripUndefined({
       ...data,
       updatedAt: serverTimestamp()
     });
+    await updateDoc(this.docRef(colName, id), payload);
   }
 
   async remove(colName: string, id: string): Promise<void> {
@@ -164,5 +165,20 @@ export class FirestoreService {
     const arr = s.split('');
     arr[arr.length - 1] = String.fromCharCode(arr[arr.length - 1].charCodeAt(0) + 1);
     return arr.join('');
+  }
+
+  /**
+   * Devuelve un nuevo objeto sin las claves cuyo valor sea `undefined`.
+   * Firestore rechaza `undefined` en cualquier campo (incluso dentro de
+   * un spread), por eso se limpian antes de `setDoc`/`updateDoc`.
+   * No muta el input.
+   */
+  private stripUndefined<T = any>(obj: T): T {
+    if (obj === null || typeof obj !== 'object') return obj;
+    const out: any = {};
+    for (const [k, v] of Object.entries(obj as Record<string, any>)) {
+      if (v !== undefined) out[k] = v;
+    }
+    return out as T;
   }
 }
