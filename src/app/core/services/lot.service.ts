@@ -3,7 +3,7 @@ import { differenceInDays } from 'date-fns';
 import { FirestoreService } from './firestore.service';
 import { RefreshService } from './refresh.service';
 import { StorageService } from './storage.service';
-import { doc, collection, serverTimestamp, writeBatch, setDoc, updateDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import { doc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 
 // ──────────────── MODELOS (camelCase) ────────────────
 
@@ -542,30 +542,28 @@ export class LotService {
    */
   async createMortalidad(mortalidad: Partial<Mortalidad>): Promise<Mortalidad> {
     if (!mortalidad.loteId) throw new Error('loteId es requerido');
+    // Lecturas fuera de la transacción (Firestore v11: Transaction.get()
+    // sólo acepta DocumentReference, no Query).
+    const [lote, mortsExistentes] = await Promise.all([
+      this.fs.getById<Lote>('lotes', mortalidad.loteId),
+      this.fs.whereEq<Mortalidad>('mortalidades', 'loteId', mortalidad.loteId)
+    ]);
+    if (!lote) throw new Error('Lote no existe');
+
+    let totalMuerto = mortalidad.cantidad || 0;
+    mortsExistentes.forEach(m => { totalMuerto += m.cantidad || 0; });
+    const nuevaCantidad = Math.max(0, (lote.cantidadInicial || 0) - totalMuerto);
+
+    const mortId = this.fs.newId('mortalidades');
     const result = await this.fs.transaction(async (tx) => {
-      const mortId = this.fs.newId('mortalidades');
       const mortRef = doc(collection(this.fs['fs'] as any, 'mortalidades'), mortId);
       const loteRef = doc(this.fs['fs'] as any, `lotes/${mortalidad.loteId}`);
-
-      const loteSnap = await tx.get(loteRef);
-      if (!loteSnap.exists()) throw new Error('Lote no existe');
-      const lote = loteSnap.data() as Lote;
 
       tx.set(mortRef, {
         ...mortalidad,
         id: mortId,
         createdAt: serverTimestamp()
       });
-
-      // recalcula cantidadActual = cantidadInicial - suma(mortalidades) - otras salidas (no modeladas)
-      const mortSnap = await tx.get(
-        query(collection(this.fs['fs'] as any, 'mortalidades'), where('loteId', '==', mortalidad.loteId))
-      );
-      let totalMuerto = mortalidad.cantidad || 0;
-      mortSnap.forEach((d: any) => {
-        if (d.id !== mortId) totalMuerto += d.data()['cantidad'] || 0;
-      });
-      const nuevaCantidad = Math.max(0, (lote.cantidadInicial || 0) - totalMuerto);
 
       tx.update(loteRef, { cantidadActual: nuevaCantidad, updatedAt: serverTimestamp() });
       return { id: mortId, ...mortalidad } as Mortalidad;
@@ -576,24 +574,25 @@ export class LotService {
   }
 
   async deleteMortalidad(id: string, loteId: string): Promise<void> {
+    // Lecturas fuera de la transacción (Firestore v11: Transaction.get()
+    // sólo acepta DocumentReference, no Query).
+    const [lote, mortsExistentes] = await Promise.all([
+      this.fs.getById<Lote>('lotes', loteId),
+      this.fs.whereEq<Mortalidad>('mortalidades', 'loteId', loteId)
+    ]);
+    if (!lote) return;
+
+    let totalMuerto = 0;
+    mortsExistentes.forEach(m => {
+      if (m.id !== id) totalMuerto += m.cantidad || 0;
+    });
+    const nuevaCantidad = Math.max(0, (lote.cantidadInicial || 0) - totalMuerto);
+
     await this.fs.transaction(async (tx) => {
       const mortRef = doc(this.fs['fs'] as any, `mortalidades/${id}`);
       const loteRef = doc(this.fs['fs'] as any, `lotes/${loteId}`);
 
-      const loteSnap = await tx.get(loteRef);
-      if (!loteSnap.exists()) return;
-      const lote = loteSnap.data() as Lote;
-
       tx.delete(mortRef);
-
-      const mortSnap = await tx.get(
-        query(collection(this.fs['fs'] as any, 'mortalidades'), where('loteId', '==', loteId))
-      );
-      let totalMuerto = 0;
-      mortSnap.forEach((d: any) => {
-        if (d.id !== id) totalMuerto += d.data()['cantidad'] || 0;
-      });
-      const nuevaCantidad = Math.max(0, (lote.cantidadInicial || 0) - totalMuerto);
       tx.update(loteRef, { cantidadActual: nuevaCantidad, updatedAt: serverTimestamp() });
     });
     this.refresh.triggerRefresh('mortalidad');
@@ -692,7 +691,12 @@ export class LotService {
 
   async searchClientes(termino: string): Promise<Cliente[]> {
     if (!termino) return this.fs.getAll<Cliente>('clientes', 'nombre', 'asc', 10);
-    return this.fs.wherePrefix<Cliente>('clientes', 'nombre', termino, 10);
+    
+    const todos = await this.fs.getAll<Cliente>('clientes', 'nombre', 'asc', 500);
+    const termLower = termino.toLowerCase();
+    return todos
+      .filter(c => c.nombre.toLowerCase().includes(termLower))
+      .slice(0, 10);
   }
 
   async createCliente(cliente: Partial<Cliente>): Promise<Cliente> {
@@ -751,16 +755,23 @@ export class LotService {
   }
 
   async deleteVenta(id: string): Promise<void> {
-    // también elimina sus pesadas y pagos
-    await this.fs.transaction(async (tx) => {
-      const pesadas = await tx.get(query(collection(this.fs['fs'] as any, 'detallePesadas'), where('ventaId', '==', id)));
-      const pagos = await tx.get(query(collection(this.fs['fs'] as any, 'pagos'), where('ventaId', '==', id)));
-      const batch = writeBatch(this.fs['fs'] as any);
-      pesadas.forEach((d: any) => batch.delete(d.ref));
-      pagos.forEach((d: any) => batch.delete(d.ref));
-      batch.delete(doc(this.fs['fs'] as any, `ventas/${id}`));
-      await batch.commit();
+    // también elimina sus pesadas y pagos.
+    // Lecturas fuera de la transacción (Firestore v11: Transaction.get()
+    // sólo acepta DocumentReference, no Query). No se necesita transacción
+    // atómica porque la venta no se referencia desde ningún otro documento.
+    const [pesadas, pagos] = await Promise.all([
+      this.fs.whereEq<DetallePesada>('detallePesadas', 'ventaId', id),
+      this.fs.whereEq<Pago>('pagos', 'ventaId', id)
+    ]);
+    const batch = writeBatch(this.fs['fs'] as any);
+    pesadas.forEach(p => {
+      if (p.id) batch.delete(doc(this.fs['fs'] as any, `detallePesadas/${p.id}`));
     });
+    pagos.forEach(p => {
+      if (p.id) batch.delete(doc(this.fs['fs'] as any, `pagos/${p.id}`));
+    });
+    batch.delete(doc(this.fs['fs'] as any, `ventas/${id}`));
+    await batch.commit();
     this.refresh.triggerRefresh('ventas');
   }
 
@@ -769,14 +780,22 @@ export class LotService {
    * Reemplaza el trigger PL/pgSQL `actualizar_totales_venta`.
    */
   async addPesada(ventaId: string, pesoKg: number, cantidadPollos: number = 1): Promise<DetallePesada> {
+    // Las pesadas existentes se consultan FUERA de la transacción
+    // (Firestore v11: Transaction.get() solo acepta DocumentReference, no Query).
+    // La transacción sólo necesita escribir la nueva pesada + actualizar totales
+    // sobre la venta ya conocida.
+    const ventaSnap = await this.fs.getById<Venta>('ventas', ventaId);
+    if (!ventaSnap) throw new Error('Venta no existe');
+    const venta = ventaSnap;
+    const pesadasExistentes = await this.fs.whereEq<DetallePesada>(
+      'detallePesadas', 'ventaId', ventaId
+    );
+
+    const pesadaId = this.fs.newId('detallePesadas');
     const result = await this.fs.transaction(async (tx) => {
       const ventaRef = doc(this.fs['fs'] as any, `ventas/${ventaId}`);
-      const ventaSnap = await tx.get(ventaRef);
-      if (!ventaSnap.exists()) throw new Error('Venta no existe');
-      const venta = ventaSnap.data() as Venta;
-
-      const pesadaId = this.fs.newId('detallePesadas');
       const pesadaRef = doc(collection(this.fs['fs'] as any, 'detallePesadas'), pesadaId);
+
       tx.set(pesadaRef, {
         id: pesadaId,
         ventaId,
@@ -785,12 +804,8 @@ export class LotService {
         createdAt: serverTimestamp()
       });
 
-      // recalcular totales sumando todas las pesadas de la venta
-      const pesadas = await tx.get(query(collection(this.fs['fs'] as any, 'detallePesadas'), where('ventaId', '==', ventaId)));
       let totalKg = pesoKg;
-      pesadas.forEach((d: any) => {
-        if (d.id !== pesadaId) totalKg += d.data()['pesoKg'] || 0;
-      });
+      pesadasExistentes.forEach(p => { totalKg += p.pesoKg || 0; });
       const totalBs = totalKg * (venta.precioKg || 0);
 
       tx.update(ventaRef, { totalKg, totalBs, updatedAt: serverTimestamp() });
@@ -801,19 +816,22 @@ export class LotService {
   }
 
   async updatePesada(id: string, pesoKg: number, cantidadPollos: number, ventaId: string): Promise<DetallePesada> {
+    // Lecturas fuera de la transacción (Firestore v11: Transaction.get()
+    // sólo acepta DocumentReference, no Query).
+    const [venta, pesadas] = await Promise.all([
+      this.fs.getById<Venta>('ventas', ventaId),
+      this.fs.whereEq<DetallePesada>('detallePesadas', 'ventaId', ventaId)
+    ]);
+    if (!venta) throw new Error('Venta no existe');
+
     const result = await this.fs.transaction(async (tx) => {
       const ventaRef = doc(this.fs['fs'] as any, `ventas/${ventaId}`);
       const pesadaRef = doc(this.fs['fs'] as any, `detallePesadas/${id}`);
 
       tx.update(pesadaRef, { pesoKg, cantidadPollos, updatedAt: serverTimestamp() });
 
-      const ventaSnap = await tx.get(ventaRef);
-      if (!ventaSnap.exists()) throw new Error('Venta no existe');
-      const venta = ventaSnap.data() as Venta;
-
-      const pesadas = await tx.get(query(collection(this.fs['fs'] as any, 'detallePesadas'), where('ventaId', '==', ventaId)));
       let totalKg = 0;
-      pesadas.forEach((d: any) => totalKg += d.data()['pesoKg'] || 0);
+      pesadas.forEach(p => { totalKg += p.pesoKg || 0; });
       const totalBs = totalKg * (venta.precioKg || 0);
 
       tx.update(ventaRef, { totalKg, totalBs, updatedAt: serverTimestamp() });
@@ -824,20 +842,23 @@ export class LotService {
   }
 
   async removePesada(id: string, ventaId: string): Promise<void> {
+    // Lecturas fuera de la transacción (Firestore v11: Transaction.get()
+    // sólo acepta DocumentReference, no Query).
+    const [venta, pesadas] = await Promise.all([
+      this.fs.getById<Venta>('ventas', ventaId),
+      this.fs.whereEq<DetallePesada>('detallePesadas', 'ventaId', ventaId)
+    ]);
+    if (!venta) return;
+
     await this.fs.transaction(async (tx) => {
       const ventaRef = doc(this.fs['fs'] as any, `ventas/${ventaId}`);
       const pesadaRef = doc(this.fs['fs'] as any, `detallePesadas/${id}`);
 
       tx.delete(pesadaRef);
 
-      const ventaSnap = await tx.get(ventaRef);
-      if (!ventaSnap.exists()) return;
-      const venta = ventaSnap.data() as Venta;
-
-      const pesadas = await tx.get(query(collection(this.fs['fs'] as any, 'detallePesadas'), where('ventaId', '==', ventaId)));
       let totalKg = 0;
-      pesadas.forEach((d: any) => {
-        if (d.id !== id) totalKg += d.data()['pesoKg'] || 0;
+      pesadas.forEach(p => {
+        if (p.id !== id) totalKg += p.pesoKg || 0;
       });
       const totalBs = totalKg * (venta.precioKg || 0);
       tx.update(ventaRef, { totalKg, totalBs, updatedAt: serverTimestamp() });
@@ -860,22 +881,23 @@ export class LotService {
    */
   async createPago(pago: Partial<Pago>): Promise<Pago> {
     if (!pago.ventaId) throw new Error('ventaId es requerido');
+    // Lecturas fuera de la transacción (Firestore v11: Transaction.get()
+    // sólo acepta DocumentReference, no Query).
+    const [venta, pagos] = await Promise.all([
+      this.fs.getById<Venta>('ventas', pago.ventaId),
+      this.fs.whereEq<Pago>('pagos', 'ventaId', pago.ventaId)
+    ]);
+    if (!venta) throw new Error('Venta no existe');
+
+    const pagoId = this.fs.newId('pagos');
     const result = await this.fs.transaction(async (tx) => {
       const ventaRef = doc(this.fs['fs'] as any, `ventas/${pago.ventaId}`);
-      const pagoId = this.fs.newId('pagos');
       const pagoRef = doc(collection(this.fs['fs'] as any, 'pagos'), pagoId);
-
-      const ventaSnap = await tx.get(ventaRef);
-      if (!ventaSnap.exists()) throw new Error('Venta no existe');
-      const venta = ventaSnap.data() as Venta;
 
       tx.set(pagoRef, { ...pago, id: pagoId, createdAt: serverTimestamp() });
 
-      const pagos = await tx.get(query(collection(this.fs['fs'] as any, 'pagos'), where('ventaId', '==', pago.ventaId)));
       let totalPagado = pago.monto || 0;
-      pagos.forEach((d: any) => {
-        if (d.id !== pagoId) totalPagado += d.data()['monto'] || 0;
-      });
+      pagos.forEach(p => { totalPagado += p.monto || 0; });
       const totalBs = venta.totalBs || 0;
 
       let estado: 'PENDIENTE' | 'PARCIAL' | 'CANCELADO' = 'PENDIENTE';
@@ -891,20 +913,23 @@ export class LotService {
   }
 
   async deletePago(id: string, ventaId: string): Promise<void> {
+    // Lecturas fuera de la transacción (Firestore v11: Transaction.get()
+    // sólo acepta DocumentReference, no Query).
+    const [venta, pagos] = await Promise.all([
+      this.fs.getById<Venta>('ventas', ventaId),
+      this.fs.whereEq<Pago>('pagos', 'ventaId', ventaId)
+    ]);
+    if (!venta) return;
+
     await this.fs.transaction(async (tx) => {
       const ventaRef = doc(this.fs['fs'] as any, `ventas/${ventaId}`);
       const pagoRef = doc(this.fs['fs'] as any, `pagos/${id}`);
 
       tx.delete(pagoRef);
 
-      const ventaSnap = await tx.get(ventaRef);
-      if (!ventaSnap.exists()) return;
-      const venta = ventaSnap.data() as Venta;
-
-      const pagos = await tx.get(query(collection(this.fs['fs'] as any, 'pagos'), where('ventaId', '==', ventaId)));
       let totalPagado = 0;
-      pagos.forEach((d: any) => {
-        if (d.id !== id) totalPagado += d.data()['monto'] || 0;
+      pagos.forEach(p => {
+        if (p.id !== id) totalPagado += p.monto || 0;
       });
       const totalBs = venta.totalBs || 0;
       let estado: 'PENDIENTE' | 'PARCIAL' | 'CANCELADO' = 'PENDIENTE';

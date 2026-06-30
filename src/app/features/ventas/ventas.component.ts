@@ -37,7 +37,7 @@ import { format } from 'date-fns';
               @for (venta of ventasDelDia(); track venta.id) {
                 <div class="venta-card" [class]="'estado-' + venta.estado.toLowerCase()">
                   <div class="venta-header">
-                    <strong>{{ venta.cliente?.nombre || 'Sin cliente' }}</strong>
+                    <strong>{{ venta.clienteNombre || 'Sin cliente' }}</strong>
                     <span class="badge" [class]="venta.estado.toLowerCase()">{{ getEstadoLabel(venta.estado) }}</span>
                   </div>
                   <div class="venta-body">
@@ -53,6 +53,8 @@ import { format } from 'date-fns';
                   </div>
                   <div class="venta-actions">
                     <button class="btn-imprimir" (click)="imprimirBoleta(venta)">🖨️ Imprimir</button>
+                    <button class="btn-editar" (click)="editarVenta(venta)">✏️ Editar</button>
+                    <button class="btn-borrar" (click)="confirmarBorrar(venta)">🗑️ Borrar</button>
                   </div>
                 </div>
               }
@@ -65,7 +67,7 @@ import { format } from 'date-fns';
             <button class="btn-back" (click)="goBack()">←</button>
             <div>
               <h1>Ventas - {{ loteInfo()?.nombre || 'Lote' }}</h1>
-              <p class="subtitle">{{ loteInfo()?.galpon?.granja?.nombre }} / {{ loteInfo()?.galpon?.nombre }}</p>
+              <p class="subtitle">{{ loteInfo()?.galponNombre }} / {{ loteInfo()?.granjaNombre }}</p>
             </div>
           </div>
         </div>
@@ -131,7 +133,7 @@ import { format } from 'date-fns';
           @for (venta of ventasFiltradas(); track venta.id) {
             <div class="venta-card" [class]="'estado-' + venta.estado.toLowerCase()">
               <div class="venta-header">
-                <strong>{{ venta.cliente?.nombre || 'Sin cliente' }}</strong>
+                <strong>{{ venta.clienteNombre || 'Sin cliente' }}</strong>
                 <span class="badge" [class]="venta.estado.toLowerCase()">{{ getEstadoLabel(venta.estado) }}</span>
               </div>
               <div class="venta-body">
@@ -147,6 +149,8 @@ import { format } from 'date-fns';
               </div>
               <div class="venta-actions">
                 <button class="btn-imprimir" (click)="imprimirBoleta(venta)">🖨️ Imprimir</button>
+                <button class="btn-editar" (click)="editarVenta(venta)">✏️ Editar</button>
+                <button class="btn-borrar" (click)="confirmarBorrar(venta)">🗑️ Borrar</button>
               </div>
             </div>
           }
@@ -166,6 +170,9 @@ import { format } from 'date-fns';
         <div class="loading">Cargando...</div>
       } @else if (showForm()) {
         <div class="venta-form">
+          <div class="form-header">
+            <h2>{{ editandoVentaId ? 'Editar venta' : 'Nueva venta' }}</h2>
+          </div>
           <div class="form-section">
             <h3>1. Cliente</h3>
             <div class="cliente-search">
@@ -316,6 +323,28 @@ import { format } from 'date-fns';
           </div>
         </div>
       }
+
+      @if (confirmDeleteVisible()) {
+        <div class="modal-overlay" (click)="cancelarBorrar()">
+          <div class="modal" (click)="$event.stopPropagation()">
+            <h3>¿Borrar venta?</h3>
+            <p class="modal-info">
+              {{ ventaAEliminar()?.clienteNombre || 'Sin cliente' }} ·
+              {{ ventaAEliminar()?.totalKg | number:'1.1-1' }} kg ·
+              {{ ventaAEliminar()?.totalBs | number:'1.2-2' }} Bs
+            </p>
+            <p class="modal-warn">
+              Esta acción no se puede deshacer. También se eliminarán sus pesadas y pagos.
+            </p>
+            <div class="modal-actions">
+              <button class="btn-secondary" (click)="cancelarBorrar()">Cancelar</button>
+              <button class="btn-danger" (click)="borrarVenta()" [disabled]="borrando()">
+                {{ borrando() ? 'Borrando...' : 'Sí, borrar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -352,8 +381,17 @@ import { format } from 'date-fns';
     .venta-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #eee; }
     .btn-imprimir { background: #17a2b8; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
     .btn-imprimir:hover { background: #138496; }
+    .btn-editar { background: #ffc107; color: #333; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+    .btn-editar:hover { background: #e0a800; }
+    .btn-borrar { background: #dc3545; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+    .btn-borrar:hover { background: #c82333; }
+    .btn-danger { background: #dc3545; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-danger:disabled { background: #999; cursor: not-allowed; }
+    .modal-warn { color: var(--secondary-color); font-size: 0.875rem; text-align: center; margin-bottom: 1rem; }
     
     .venta-form { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .form-header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid var(--primary-color); }
+    .form-header h2 { margin: 0; color: var(--dark-color); }
     .form-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #eee; }
     .form-section:last-of-type { border-bottom: none; }
     .form-section h3 { margin: 0 0 1rem 0; color: var(--dark-color); font-size: 1rem; }
@@ -448,16 +486,16 @@ export class VentasComponent implements OnInit, OnDestroy {
   loading = signal(true);
   showForm = signal(false);
   showClienteDropdown = false;
-  
+
   lotes = signal<Lote[]>([]);
   selectedLoteId = '';
   loteId: string | null = null;
   loteInfo = signal<Lote | null>(null);
-  
+
   clientes = signal<Cliente[]>([]);
   clienteResults = signal<Cliente[]>([]);
   selectedCliente = signal<Cliente | null>(null);
-  
+
   ventasDelDia = signal<Venta[]>([]);
   ventasDelLote = signal<Venta[]>([]);
   ventasFiltradas = signal<Venta[]>([]);
@@ -465,10 +503,16 @@ export class VentasComponent implements OnInit, OnDestroy {
   pesadas = signal<DetallePesada[]>([]);
   resumenLote = signal<{ totalBs: number; totalKg: number; pendientes: number }>({ totalBs: 0, totalKg: 0, pendientes: 0 });
   rentabilidadLote = signal<{ totalGastos: number; totalVentas: number; ganancia: number; roi: number }>({ totalGastos: 0, totalVentas: 0, ganancia: 0, roi: 0 });
-  
+
   ventaActual = signal<Venta | null>(null);
   pagoModalVisible = signal(false);
-  
+
+  // Edición y borrado de ventas
+  editandoVentaId: string | null = null;
+  ventaAEliminar = signal<Venta | null>(null);
+  confirmDeleteVisible = signal(false);
+  borrando = signal(false);
+
   clienteSearch = '';
   nuevaPesada: number | null = null;
   nuevaCantidadPollos: number = 1;
@@ -476,20 +520,20 @@ export class VentasComponent implements OnInit, OnDestroy {
   placa = '';
   fecha = format(new Date(), 'yyyy-MM-dd');
   observaciones = '';
-  
+
   editandoPesadaIndex: number | null = null;
   editPesadaKg: number = 0;
   editPesadaPollos: number = 1;
-  
+
   montoPago = 0;
   metodoPago: 'EFECTIVO' | 'TRANSFERENCIA' | 'OTRO' = 'EFECTIVO';
-  
+
   private refreshSub: any;
 
   async ngOnInit(): Promise<void> {
     this.loteId = this.route.snapshot.paramMap.get('loteId');
     await this.loadData();
-    
+
     this.refreshSub = this.refreshService.refresh$.subscribe(() => {
       this.loadData();
     });
@@ -506,11 +550,11 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.lotService.getLotes()
       ]);
       this.lotes.set(lotesData.filter(l => l.estado === 'ACTIVO'));
-      
+
       if (this.loteId) {
         const loteInfo = await this.lotService.getLote(this.loteId);
         this.loteInfo.set(loteInfo);
-        
+
         const resumen = await this.lotService.getResumenVentas(this.loteId);
         this.resumenLote.set(resumen);
 
@@ -550,7 +594,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   }
 
   getLoteInfo(lote: Lote): string {
-    return `${lote.galpon?.granja?.nombre || ''} / ${lote.galpon?.nombre || ''}`;
+    return `${lote.galponNombre || ''} / ${lote.granjaNombre || ''}`;
   }
 
   getLoteGalpon(venta: Venta): string {
@@ -565,7 +609,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   async imprimirBoleta(venta: Venta): Promise<void> {
     const pesadas = await this.lotService.getDetallePesadas(venta.id!);
     const pagos = await this.lotService.getPagos(venta.id!);
-    
+
     const contenido = `
 <!DOCTYPE html>
 <html>
@@ -595,7 +639,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   
   <div class="info">
     <div class="info-row"><span class="label">Fecha:</span> <span>${this.formatDate(venta.fecha)}</span></div>
-    <div class="info-row"><span class="label">Cliente:</span> <span>${venta.cliente?.nombre || 'Sin cliente'}</span></div>
+    <div class="info-row"><span class="label">Cliente:</span> <span>${venta.clienteNombre || 'Sin cliente'}</span></div>
     ${venta.cliente?.telefono ? `<div class="info-row"><span class="label">Teléfono:</span> <span>${venta.cliente.telefono}</span></div>` : ''}
     <div class="info-row"><span class="label">Lote/Galpón:</span> <span>${this.getLoteGalpon(venta)}</span></div>
     ${venta.placa ? `<div class="info-row"><span class="label">Vehículo:</span> <span>${venta.placa}</span></div>` : ''}
@@ -688,17 +732,17 @@ export class VentasComponent implements OnInit, OnDestroy {
   addPesada(): void {
     if (!this.nuevaPesada || this.nuevaPesada <= 0) return;
     if (!this.nuevaCantidadPollos || this.nuevaCantidadPollos <= 0) this.nuevaCantidadPollos = 1;
-    
+
     const pesada: DetallePesada = {
       id: 'temp-' + Date.now(),
       ventaId: '',
       pesoKg: this.nuevaPesada,
       cantidadPollos: this.nuevaCantidadPollos
     };
-    
+
     this.pesadas.update(list => [...list, pesada]);
     this.nuevaPesada = null;
-    this.nuevaCantidadPollos = 1;
+    //this.nuevaCantidadPollos = 1;
   }
 
   editPesada(pesada: DetallePesada, index: number): void {
@@ -770,6 +814,7 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.placa = '';
     this.fecha = format(new Date(), 'yyyy-MM-dd');
     this.observaciones = '';
+    this.editandoVentaId = null;
   }
 
   async guardarVenta(): Promise<void> {
@@ -783,33 +828,140 @@ export class VentasComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const venta = await this.lotService.createVenta({
-        clienteId: this.selectedCliente()?.id,
-        loteId: this.loteId || undefined,
-        precioKg: this.precioKg,
-        totalKg: this.getTotalKg(),
-        totalBs: this.getTotalBs(),
-        placa: this.placa || undefined,
-        fecha: this.fecha,
-        observaciones: this.observaciones || undefined,
-        estado: 'PENDIENTE'
-      });
+      if (this.editandoVentaId) {
+        // ─── Edición: actualizar venta existente y reconciliar sus pesadas ───
+        const ventaId = this.editandoVentaId;
 
-      for (const pesada of this.pesadas()) {
-        await this.lotService.addPesada(venta.id!, pesada.pesoKg, pesada.cantidadPollos);
+        // 1) Traer las pesadas actuales de Firestore para diffear contra las locales
+        const pesadasActuales = await this.lotService.getDetallePesadas(ventaId);
+
+        // 2) Marcar id-temp en las locales que aún no existen en Firestore (las que
+        //    tienen id 'temp-...') → se crean nuevas; las demás se actualizan.
+        for (const local of this.pesadas()) {
+          if (!local.id || local.id.startsWith('temp-')) {
+            await this.lotService.addPesada(ventaId, local.pesoKg, local.cantidadPollos);
+          } else {
+            await this.lotService.updatePesada(local.id, local.pesoKg, local.cantidadPollos, ventaId);
+          }
+        }
+
+        // 3) Borrar las que estaban en Firestore pero ya no están en la lista local
+        const idsLocales = new Set(this.pesadas().map(p => p.id).filter(id => !!id && !id.startsWith('temp-')));
+        for (const actual of pesadasActuales) {
+          if (actual.id && !idsLocales.has(actual.id)) {
+            await this.lotService.removePesada(actual.id, ventaId);
+          }
+        }
+
+        // 4) Actualizar los campos simples de la venta (precio, fecha, placa, cliente, obs)
+        await this.lotService.updateVenta(ventaId, {
+          clienteId: this.selectedCliente()?.id,
+          precioKg: this.precioKg,
+          placa: this.placa || undefined,
+          fecha: this.fecha,
+          observaciones: this.observaciones || undefined
+        });
+
+        if (this.loteId) {
+          const resumen = await this.lotService.getResumenVentas(this.loteId);
+          this.resumenLote.set(resumen);
+        }
+
+        await this.loadData();
+        this.showForm.set(false);
+        this.resetForm();
+
+      } else {
+        // ─── Creación nueva ───
+        const venta = await this.lotService.createVenta({
+          clienteId: this.selectedCliente()?.id,
+          loteId: this.loteId || undefined,
+          precioKg: this.precioKg,
+          totalKg: this.getTotalKg(),
+          totalBs: this.getTotalBs(),
+          placa: this.placa || undefined,
+          fecha: this.fecha,
+          observaciones: this.observaciones || undefined,
+          estado: 'PENDIENTE'
+        });
+
+        for (const pesada of this.pesadas()) {
+          await this.lotService.addPesada(venta.id!, pesada.pesoKg, pesada.cantidadPollos);
+        }
+
+        if (this.loteId) {
+          const resumen = await this.lotService.getResumenVentas(this.loteId);
+          this.resumenLote.set(resumen);
+        }
+
+        await this.loadData();
+        this.showForm.set(false);
+        this.resetForm();
       }
+
+    } catch (e: any) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  async editarVenta(venta: Venta): Promise<void> {
+    // Cargar la venta completa + sus pesadas en el formulario
+    this.editandoVentaId = venta.id || null;
+    this.precioKg = venta.precioKg;
+    this.placa = venta.placa || '';
+    this.fecha = venta.fecha;
+    this.observaciones = venta.observaciones || '';
+
+    // Cliente: si la venta trae el cliente embebido, lo usamos directo
+    if (venta.cliente) {
+      this.selectedCliente.set(venta.cliente);
+      this.clienteSearch = venta.cliente.nombre;
+    } else {
+      this.selectedCliente.set(null);
+      this.clienteSearch = '';
+    }
+
+    // Pesadas existentes de Firestore
+    try {
+      const pesadas = await this.lotService.getDetallePesadas(venta.id!);
+      this.pesadas.set(pesadas);
+    } catch (e: any) {
+      alert('Error al cargar las pesadas: ' + e.message);
+      this.pesadas.set([]);
+    }
+
+    this.showForm.set(true);
+  }
+
+  confirmarBorrar(venta: Venta): void {
+    this.ventaAEliminar.set(venta);
+    this.confirmDeleteVisible.set(true);
+  }
+
+  cancelarBorrar(): void {
+    this.confirmDeleteVisible.set(false);
+    this.ventaAEliminar.set(null);
+  }
+
+  async borrarVenta(): Promise<void> {
+    const venta = this.ventaAEliminar();
+    if (!venta?.id) return;
+
+    this.borrando.set(true);
+    try {
+      await this.lotService.deleteVenta(venta.id);
 
       if (this.loteId) {
         const resumen = await this.lotService.getResumenVentas(this.loteId);
         this.resumenLote.set(resumen);
       }
-      
+
       await this.loadData();
-      this.showForm.set(false);
-      this.resetForm();
-      
+      this.cancelarBorrar();
     } catch (e: any) {
-      alert('Error: ' + e.message);
+      alert('Error al borrar: ' + e.message);
+    } finally {
+      this.borrando.set(false);
     }
   }
 
@@ -831,7 +983,7 @@ export class VentasComponent implements OnInit, OnDestroy {
       alert('Ingresa un monto válido');
       return;
     }
-    
+
     try {
       await this.lotService.createPago({
         ventaId: this.ventaActual()!.id!,
@@ -839,7 +991,7 @@ export class VentasComponent implements OnInit, OnDestroy {
         fecha: format(new Date(), 'yyyy-MM-dd'),
         metodo: this.metodoPago
       });
-      
+
       this.closePagoModal();
       await this.loadData();
     } catch (e: any) {
