@@ -321,28 +321,28 @@ import { format } from 'date-fns';
   styles: [`
     .page-container { max-width: 800px; margin: 0 auto; padding: 1rem; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .header-info { display: flex; align-items: center; gap: 1rem; }
     .btn-back { background: #e9ecef; border: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 1.25rem; }
-    .btn-back:hover { background: #FFC107; }
+    .btn-back:hover { background: var(--primary-color); }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
     .loading { text-align: center; padding: 3rem; color: #666; }
     
     .lote-selector { background: white; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; }
     .lote-selector label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
     .input-field { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .input-field:focus { outline: none; border-color: #FFC107; }
+    .input-field:focus { outline: none; border-color: var(--primary-color); }
     
     .ventas-hoy { margin-bottom: 2rem; }
-    .ventas-hoy h2 { margin-bottom: 1rem; color: #2B2B2B; }
+    .ventas-hoy h2 { margin-bottom: 1rem; color: var(--dark-color); }
     .ventas-list { display: flex; flex-direction: column; gap: 0.75rem; }
     .venta-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid #ccc; }
-    .venta-card.estado-pendiente { border-left-color: #D32F2F; }
+    .venta-card.estado-pendiente { border-left-color: var(--secondary-color); }
     .venta-card.estado-parcial { border-left-color: #FF9800; }
     .venta-card.estado-cancelado { border-left-color: #28a745; }
     .venta-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
     .badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-    .badge.pendiente { background: #f8d7da; color: #D32F2F; }
+    .badge.pendiente { background: #f8d7da; color: var(--secondary-color); }
     .badge.parcial { background: #fff3cd; color: #856404; }
     .badge.cancelado { background: #d4edda; color: #155724; }
     .venta-body { display: flex; justify-content: space-between; }
@@ -356,13 +356,13 @@ import { format } from 'date-fns';
     .venta-form { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .form-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #eee; }
     .form-section:last-of-type { border-bottom: none; }
-    .form-section h3 { margin: 0 0 1rem 0; color: #2B2B2B; font-size: 1rem; }
+    .form-section h3 { margin: 0 0 1rem 0; color: var(--dark-color); font-size: 1rem; }
     
     .cliente-search { position: relative; }
     .dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; max-height: 200px; overflow-y: auto; }
     .dropdown-item { padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
     .dropdown-item:hover { background: #f8f9fa; }
-    .dropdown-item.nuevo { color: #FFC107; font-weight: 600; border-bottom: none; }
+    .dropdown-item.nuevo { color: var(--primary-color); font-weight: 600; border-bottom: none; }
     .dropdown-item small { color: #666; }
     .selected-cliente { margin-top: 0.75rem; padding: 0.75rem; background: #d4edda; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; color: #155724; }
     .btn-link { background: none; border: none; color: #155724; text-decoration: underline; cursor: pointer; }
@@ -379,17 +379,17 @@ import { format } from 'date-fns';
     .pesadas-list { background: #f8f9fa; border-radius: 8px; padding: 0.75rem; }
     .pesada-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; background: white; border-radius: 6px; margin-bottom: 0.5rem; cursor: pointer; }
     .pesada-item:hover { background: #fff; }
-    .pesada-num { width: 24px; height: 24px; background: #FFC107; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
+    .pesada-num { width: 24px; height: 24px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
     .pesada-info { flex: 1; display: flex; gap: 1rem; align-items: center; }
     .pesada-peso { font-weight: 500; }
     .pesada-pollos { color: #666; font-size: 0.875rem; }
-    .btn-remove { background: #f8d7da; color: #D32F2F; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
+    .btn-remove { background: #f8d7da; color: var(--secondary-color); border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 1rem; }
     .pesada-edit { display: flex; gap: 0.5rem; align-items: center; }
     .input-edit { width: 70px; padding: 0.25rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.875rem; }
     .btn-save { background: #28a745; color: white; border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; }
-    .btn-cancel { background: #f8d7da; color: #D32F2F; border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; }
+    .btn-cancel { background: #f8d7da; color: var(--secondary-color); border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; }
     .pesadas-total { display: flex; align-items: center; gap: 1.5rem; padding-top: 0.75rem; border-top: 2px solid #ddd; margin-top: 0.5rem; }
-    .total-kg { font-size: 1.25rem; font-weight: 700; color: #2B2B2B; }
+    .total-kg { font-size: 1.25rem; font-weight: 700; color: var(--dark-color); }
     .total-pollos { color: #666; font-size: 0.875rem; }
     .total-bs { font-size: 1.25rem; font-weight: 700; color: #28a745; margin-left: auto; }
     
@@ -399,7 +399,7 @@ import { format } from 'date-fns';
     .form-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.875rem; }
     
     .form-actions { display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
     .btn-large { padding: 1rem 2rem; font-size: 1.1rem; }
     
@@ -415,16 +415,16 @@ import { format } from 'date-fns';
 
     .rentabilidad-card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border-left: 4px solid #ccc; }
     .rentabilidad-card.ganancia-pos { border-left-color: #28a745; }
-    .rentabilidad-card.ganancia-neg { border-left-color: #D32F2F; }
-    .rentabilidad-card h3 { margin: 0 0 1rem 0; color: #2B2B2B; font-size: 1.1rem; }
+    .rentabilidad-card.ganancia-neg { border-left-color: var(--secondary-color); }
+    .rentabilidad-card h3 { margin: 0 0 1rem 0; color: var(--dark-color); font-size: 1.1rem; }
     .rent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
     .rent-item { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; }
     .rent-label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
-    .rent-value { font-size: 1.1rem; font-weight: 600; color: #2B2B2B; }
+    .rent-value { font-size: 1.1rem; font-weight: 600; color: var(--dark-color); }
     .rent-value.big { font-size: 1.5rem; }
-    .text-danger { color: #D32F2F; }
+    .text-danger { color: var(--secondary-color); }
     .text-success { color: #28a745; }
-    .stat-value.warning { color: #D32F2F; }
+    .stat-value.warning { color: var(--secondary-color); }
     
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
     .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; }
@@ -433,7 +433,7 @@ import { format } from 'date-fns';
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; }
     
     .ventas-lote-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .ventas-lote-header h3 { margin: 0; color: #2B2B2B; }
+    .ventas-lote-header h3 { margin: 0; color: var(--dark-color); }
     .filtro-fecha { display: flex; gap: 0.5rem; }
     .filtro-fecha select { padding: 0.5rem; min-width: 120px; }
     .ventas-todas { margin-bottom: 1.5rem; }
@@ -590,7 +590,7 @@ export class VentasComponent implements OnInit, OnDestroy {
 <body>
   <div class="header">
     <h1>🐔 BOLETA DE VENTA</h1>
-    <div>EngordeEnOrden</div>
+    <div>Engorde En Orden</div>
   </div>
   
   <div class="info">
@@ -625,7 +625,7 @@ export class VentasComponent implements OnInit, OnDestroy {
   
   <div class="footer">
     ¡Gracias por su compra!<br>
-    EngordeEnOrden - Sistema de Gestión Avícola
+    Engorde En Orden - Sistema de Gestión Avícola
   </div>
   
   <script>window.print();</script>

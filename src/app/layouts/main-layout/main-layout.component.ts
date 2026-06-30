@@ -19,8 +19,8 @@ import { NotificationService, Notification } from '../../core/services/notificat
             <span>&#9776;</span>
           </button>
           <div class="logo">
-            <span class="logo-icon">🐔</span>
-            <span class="logo-text">EngordeEnOrden</span>
+            <img src="logo.png" alt="Engorde En Orden" class="logo-icon">
+            <span class="logo-text">Engorde <span class="logo-accent">En Orden</span></span>
           </div>
         </div>
 
@@ -76,10 +76,10 @@ import { NotificationService, Notification } from '../../core/services/notificat
         </nav>
 
         <div class="sidebar-footer">
-          <span class="brand-icon">🐔</span>
+          <img src="logo.png" alt="Engorde En Orden" class="brand-icon">
           @if (!layoutService.collapsed() || layoutService.mobileOpen()) {
             <div class="brand-text">
-              <span class="brand-name">EngordeEnOrden</span>
+              <span class="brand-name">Engorde <span class="brand-name-accent">En Orden</span></span>
               <span class="brand-tagline">Tecnología para crecer mejor</span>
             </div>
           }
@@ -102,7 +102,7 @@ import { NotificationService, Notification } from '../../core/services/notificat
       left: 0;
       right: 0;
       height: 60px;
-      background: #2B2B2B;
+      background: var(--dark-color);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -121,21 +121,22 @@ import { NotificationService, Notification } from '../../core/services/notificat
       min-width: 44px;
       min-height: 44px;
     }
-    .menu-toggle:hover { color: #FFC107; }
+    .menu-toggle:hover { color: var(--primary-color); }
     .logo { display: flex; align-items: center; gap: 0.5rem; }
-    .logo-icon { font-size: 1.5rem; }
-    .logo-text { color: #FFC107; font-size: 1.25rem; font-weight: 700; white-space: nowrap; }
+    .logo-icon { width: 36px; height: 36px; object-fit: contain; flex-shrink: 0; }
+    .logo-text { color: white; font-size: 1.25rem; font-weight: 700; white-space: nowrap; }
+    .logo-accent { color: var(--secondary-color); }
     .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
     .notification-btn {
       background: none; border: none; font-size: 1.25rem; cursor: pointer;
-      position: relative; min-width: 44px; min-height: 44px; padding: 0.5rem;
+      position: relative; min-width: 44px; min-height: 44px; padding: 0.5rem; color: white;
     }
-    .notification-btn:hover { color: #FFC107; }
+    .notification-btn:hover { color: var(--primary-color); }
     .badge {
       position: absolute;
       top: 4px;
       right: 4px;
-      background: #D32F2F;
+      background: var(--secondary-color);
       color: white;
       font-size: 0.7rem;
       padding: 2px 6px;
@@ -165,14 +166,14 @@ import { NotificationService, Notification } from '../../core/services/notificat
     .user-menu { display: flex; align-items: center; gap: 0.5rem; }
     .user-avatar {
       width: 36px; height: 36px;
-      background: #FFC107; color: #2B2B2B;
+      background: var(--primary-color); color: var(--dark-color);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-weight: bold; flex-shrink: 0;
     }
     .user-email { color: white; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
     .logout-btn {
-      background: #D32F2F; color: white; border: none;
+      background: var(--secondary-color); color: white; border: none;
       padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; white-space: nowrap;
     }
     .logout-btn:hover { background: #b71c1c; }
@@ -197,7 +198,7 @@ import { NotificationService, Notification } from '../../core/services/notificat
       left: 0;
       width: 280px;
       height: calc(100vh - 60px);
-      background: #2B2B2B;
+      background: var(--dark-color);
       display: flex;
       flex-direction: column;
       transition: width 0.3s ease;
@@ -225,7 +226,7 @@ import { NotificationService, Notification } from '../../core/services/notificat
       overflow: hidden;
     }
     .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
-    .nav-item.active { background: #FFC107; color: #2B2B2B; font-weight: 600; }
+    .nav-item.active { background: var(--primary-color); color: var(--dark-color); font-weight: 600; }
     .nav-icon {
       font-size: 1.05rem;
       width: 20px;
@@ -245,9 +246,10 @@ import { NotificationService, Notification } from '../../core/services/notificat
       padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1);
       display: flex; align-items: center; gap: 0.75rem;
     }
-    .brand-icon { font-size: 2rem; flex-shrink: 0; }
+    .brand-icon { width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; }
     .brand-text { display: flex; flex-direction: column; overflow: hidden; }
-    .brand-name { color: #FFC107; font-weight: 700; font-size: 1rem; white-space: nowrap; }
+    .brand-name { color: white; font-weight: 700; font-size: 1rem; white-space: nowrap; }
+    .brand-name-accent { color: var(--secondary-color); }
     .brand-tagline { color: rgba(255,255,255,0.5); font-size: 0.75rem; white-space: nowrap; }
 
     /* ────────── Main content ────────── */

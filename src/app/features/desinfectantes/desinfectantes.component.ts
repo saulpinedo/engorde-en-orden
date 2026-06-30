@@ -56,14 +56,14 @@ import { LotService, DesinfectanteCatalogo } from '../../core/services/lot.servi
   styles: [`
     .page-container { max-width: 1200px; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
     .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .data-table { width: 100%; border-collapse: collapse; }
     .data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; }
     .data-table th { background: #f8f9fa; font-weight: 600; }
     .text-center { text-align: center; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
     .btn-icon { background: none; border: none; cursor: pointer; padding: 0.25rem; }
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }

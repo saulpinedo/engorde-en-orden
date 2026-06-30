@@ -76,19 +76,19 @@ import { LotService, FaseAlimento } from '../../core/services/lot.service';
   styles: [`
     .page-container { max-width: 1000px; margin: 0 auto; padding: 1rem; }
     .page-header { margin-bottom: 1.5rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .subtitle { margin: 0.5rem 0 0 0; color: #666; }
     .loading { text-align: center; padding: 3rem; color: #666; }
     
     .fases-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .fase-card { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 6px solid #ccc; }
-    .fase-f0 { border-top-color: #FFC107; }
+    .fase-f0 { border-top-color: var(--primary-color); }
     .fase-f1 { border-top-color: #FF9800; }
-    .fase-f2 { border-top-color: #D32F2F; }
+    .fase-f2 { border-top-color: var(--secondary-color); }
     .fase-f3 { border-top-color: #6f42c1; }
     
     .fase-header { margin-bottom: 1rem; }
-    .fase-header h2 { margin: 0; color: #2B2B2B; font-size: 1.25rem; }
+    .fase-header h2 { margin: 0; color: var(--dark-color); font-size: 1.25rem; }
     .dias-range { font-size: 0.875rem; color: #666; }
     
     .fase-stats { display: flex; gap: 1rem; margin-bottom: 1rem; }
@@ -100,16 +100,16 @@ import { LotService, FaseAlimento } from '../../core/services/lot.service';
     .precio-section label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 0.5rem; }
     .precio-input-group { display: flex; align-items: center; gap: 0.5rem; }
     .precio-input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1.25rem; font-weight: 600; text-align: right; }
-    .precio-input:focus { outline: none; border-color: #FFC107; }
+    .precio-input:focus { outline: none; border-color: var(--primary-color); }
     .bs-label { font-size: 0.875rem; color: #666; }
     
-    .resumen-card { background: linear-gradient(135deg, #2B2B2B 0%, #3d3d3d 100%); border-radius: 16px; padding: 1.5rem; color: white; }
+    .resumen-card { background: linear-gradient(135deg, var(--dark-color) 0%, #3d3d3d 100%); border-radius: 16px; padding: 1.5rem; color: white; }
     .resumen-card h3 { margin: 0 0 1rem 0; font-size: 1rem; opacity: 0.9; }
     .resumen-stats { display: flex; gap: 2rem; flex-wrap: wrap; }
     .resumen-stat { text-align: center; }
     .resumen-stat .label { display: block; font-size: 0.75rem; opacity: 0.7; margin-bottom: 0.25rem; }
     .resumen-stat .value { font-size: 1.5rem; font-weight: 700; }
-    .resumen-stat.highlight .value { color: #FFC107; }
+    .resumen-stat.highlight .value { color: var(--primary-color); }
     
     @media (max-width: 768px) {
       .resumen-stats { flex-direction: column; gap: 1rem; }

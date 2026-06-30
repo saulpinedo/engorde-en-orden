@@ -327,29 +327,29 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
     .header-info { display: flex; align-items: center; gap: 1rem; }
     .btn-back { background: #e9ecef; border: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 1.25rem; }
-    .btn-back:hover { background: #FFC107; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .btn-back:hover { background: var(--primary-color); }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
     .header-actions { display: flex; gap: 0.5rem; }
     .badge { padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600; }
     .badge-activo { background: #d4edda; color: #155724; }
     .badge-finalizado { background: #fff3cd; color: #856404; }
-    .badge-etapa { background: #e9ecef; color: #2B2B2B; }
-    
+    .badge-etapa { background: #e9ecef; color: var(--dark-color); }
+
     .main-layout { display: flex; gap: 1rem; }
     .sidebar { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1rem; }
     .sidebar-section { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .sidebar-section h4 { margin: 0 0 0.75rem 0; font-size: 0.875rem; color: #2B2B2B; text-transform: uppercase; letter-spacing: 0.5px; }
+    .sidebar-section h4 { margin: 0 0 0.75rem 0; font-size: 0.875rem; color: var(--dark-color); text-transform: uppercase; letter-spacing: 0.5px; }
     .toggle-group { display: flex; flex-direction: column; gap: 0.5rem; }
     .toggle-btn { padding: 0.5rem; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; }
-    .toggle-btn:hover { border-color: #FFC107; }
-    .toggle-btn.active { background: #FFC107; color: #2B2B2B; border-color: #FFC107; font-weight: 600; }
+    .toggle-btn:hover { border-color: var(--primary-color); }
+    .toggle-btn.active { background: var(--primary-color); color: var(--dark-color); border-color: var(--primary-color); font-weight: 600; }
     .helper-text { font-size: 0.75rem; color: #666; margin: 0.5rem 0 0 0; }
     
     .filter-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer; font-size: 0.875rem; }
     .filter-item input { cursor: pointer; }
     .filter-dot { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-mortalidad { background: #D32F2F; }
+    .dot-mortalidad { background: var(--secondary-color); }
     .dot-consumo { background: #28a745; }
     .dot-pesaje { background: #17a2b8; }
     .dot-vacuna { background: #6f42c1; }
@@ -359,55 +359,55 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
     
     .etapa-indicator { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; font-size: 0.8rem; }
     .etapa-color { width: 16px; height: 16px; border-radius: 4px; }
-    .etapa-indicator.inicio .etapa-color { background: #FFC107; }
+    .etapa-indicator.inicio .etapa-color { background: var(--primary-color); }
     .etapa-indicator.crecimiento .etapa-color { background: #FF9800; }
-    .etapa-indicator.engorde .etapa-color { background: #D32F2F; }
-    
+    .etapa-indicator.engorde .etapa-color { background: var(--secondary-color); }
+
     .btn-nav { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
-    .btn-nav:hover { background: #FFC107; border-color: #FFC107; }
+    .btn-nav:hover { background: var(--primary-color); border-color: var(--primary-color); }
     .mes-info { text-align: center; margin-top: 0.5rem; color: #666; }
-    
+
     .content { flex: 1; min-width: 0; }
     .etapas-strip { display: flex; overflow-x: auto; padding: 0.5rem; background: white; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .etapa-day { min-width: 20px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; border-radius: 3px; margin-right: 2px; color: white; font-weight: 600; cursor: pointer; }
     .etapa-day:hover { transform: scale(1.2); }
-    .etapa-day-inicio { background: #FFC107; color: #856404; }
+    .etapa-day-inicio { background: var(--primary-color); color: #856404; }
     .etapa-day-crecimiento { background: #FF9800; }
-    .etapa-day-engorde { background: #D32F2F; }
+    .etapa-day-engorde { background: var(--secondary-color); }
     .day-num { line-height: 1; }
     
     .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem; }
     .stat { background: white; padding: 1rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .stat-label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 0.25rem; }
     .stat-value { font-size: 1.5rem; font-weight: 700; }
-    .text-danger { color: #d32f2f; }
+    .text-danger { color: var(--danger-color); }
     
     .calendar-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
     .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
-    .modal h3 { margin: 0 0 1.5rem 0; color: #2B2B2B; text-align: center; }
+    .modal h3 { margin: 0 0 1.5rem 0; color: var(--dark-color); text-align: center; }
     .event-types { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .event-type-btn { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1.5rem; background: #f8f9fa; border: 2px solid transparent; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
-    .event-type-btn:hover { border-color: #FFC107; }
+    .event-type-btn:hover { border-color: var(--primary-color); }
     .event-type-btn .icon { font-size: 2rem; }
     .form-grid { display: flex; flex-direction: column; gap: 1rem; }
     .form-group { display: flex; flex-direction: column; }
     .form-group label { font-weight: 500; margin-bottom: 0.5rem; font-size: 0.875rem; }
     .input-field { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .input-field:focus { outline: none; border-color: #FFC107; }
+    .input-field:focus { outline: none; border-color: var(--primary-color); }
     .info-box { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem; background: #e7f3ff; border-radius: 8px; font-size: 0.875rem; color: #004085; }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
-    .btn-danger { background: #f8d7da; color: #D32F2F; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
+    .btn-danger { background: #f8d7da; color: var(--secondary-color); border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
     
     @media (max-width: 1024px) { .main-layout { flex-direction: column; } .sidebar { width: 100%; } .stats-row { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
     
     :host ::ng-deep .fc { font-family: inherit; }
-    :host ::ng-deep .fc-toolbar-title { font-size: 1.25rem; color: #2B2B2B; }
-    :host ::ng-deep .fc-button-primary { background-color: #FFC107 !important; border-color: #FFC107 !important; color: #2B2B2B !important; }
+    :host ::ng-deep .fc-toolbar-title { font-size: 1.25rem; color: var(--dark-color); }
+    :host ::ng-deep .fc-button-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; color: var(--dark-color) !important; }
     :host ::ng-deep .fc-button-primary:hover { background-color: #e0a800 !important; }
     :host ::ng-deep .fc-day-today { background: rgba(255,193,7,0.15) !important; }
     :host ::ng-deep .fc-event { cursor: pointer; padding: 2px 4px; font-size: 0.75rem; }
@@ -415,23 +415,23 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
 
     .rentabilidad-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-top: 1.5rem; border-left: 4px solid #ccc; }
     .rentabilidad-card.ganancia-pos { border-left-color: #28a745; }
-    .rentabilidad-card.ganancia-neg { border-left-color: #D32F2F; }
-    .rentabilidad-card h3 { margin: 0 0 1rem 0; color: #2B2B2B; font-size: 1.1rem; }
+    .rentabilidad-card.ganancia-neg { border-left-color: var(--secondary-color); }
+    .rentabilidad-card h3 { margin: 0 0 1rem 0; color: var(--dark-color); font-size: 1.1rem; }
     .rent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
     .rent-item { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.75rem; background: #f8f9fa; border-radius: 8px; }
     .rent-label { font-size: 0.75rem; color: #666; text-transform: uppercase; }
-    .rent-value { font-size: 1.1rem; font-weight: 600; color: #2B2B2B; }
+    .rent-value { font-size: 1.1rem; font-weight: 600; color: var(--dark-color); }
     .rent-value.big { font-size: 1.5rem; }
-    .text-danger { color: #D32F2F; }
+    .text-danger { color: var(--secondary-color); }
     .text-success { color: #28a745; }
     .text-right { text-align: right; }
     .text-muted { color: #666; }
 
     .gastos-card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-top: 1.5rem; }
     .gastos-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-    .gastos-header h3 { margin: 0; color: #2B2B2B; font-size: 1.1rem; }
-    .btn-mini { background: none; border: 1px solid #FFC107; color: #2B2B2B; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; text-decoration: none; }
-    .btn-mini:hover { background: #FFC107; }
+    .gastos-header h3 { margin: 0; color: var(--dark-color); font-size: 1.1rem; }
+    .btn-mini { background: none; border: 1px solid var(--primary-color); color: var(--dark-color); padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; text-decoration: none; }
+    .btn-mini:hover { background: var(--primary-color); }
     .gastos-stats { padding: 0.5rem 0.75rem; background: #fff3cd; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.9rem; }
     .mini-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .mini-table th, .mini-table td { padding: 0.4rem 0.5rem; text-align: left; border-bottom: 1px solid #eee; }
@@ -440,7 +440,7 @@ import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval } from 'da
     .mini-alimento { background: #d4edda; color: #155724; }
     .mini-insumos { background: #cce5ff; color: #004085; }
     .mini-mano_obra { background: #fff3cd; color: #856404; }
-    .mini-mantenimiento { background: #f8d7da; color: #D32F2F; }
+    .mini-mantenimiento { background: #f8d7da; color: var(--secondary-color); }
     .mini-otros { background: #e2d9f3; color: #5a32a3; }
   `]
 })

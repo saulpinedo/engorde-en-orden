@@ -140,17 +140,17 @@ import { format, subMonths } from 'date-fns';
   styles: [`
     .page-container { max-width: 1000px; margin: 0 auto; padding: 1rem; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .loading { text-align: center; padding: 3rem; color: #666; }
     
     .search-box { margin-bottom: 1rem; }
     .search-input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .search-input:focus { outline: none; border-color: #FFC107; }
+    .search-input:focus { outline: none; border-color: var(--primary-color); }
     
     .clientes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
     .cliente-card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
     .cliente-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-2px); }
-    .cliente-info h3 { margin: 0; color: #2B2B2B; }
+    .cliente-info h3 { margin: 0; color: var(--dark-color); }
     .telefono { margin: 0.25rem 0 0 0; color: #666; font-size: 0.875rem; }
     .btn-edit { background: none; border: none; font-size: 1.25rem; cursor: pointer; padding: 0.5rem; }
     .btn-edit:hover { transform: scale(1.1); }
@@ -160,10 +160,10 @@ import { format, subMonths } from 'date-fns';
     .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
     .modal-large { max-width: 600px; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .modal-header h2 { margin: 0; color: #2B2B2B; }
+    .modal-header h2 { margin: 0; color: var(--dark-color); }
     .btn-close { background: none; border: none; font-size: 2rem; cursor: pointer; color: #666; }
-    .modal h3 { margin: 0 0 1rem 0; color: #2B2B2B; }
-    .modal-body h3 { margin: 1.5rem 0 1rem 0; color: #2B2B2B; }
+    .modal h3 { margin: 0 0 1rem 0; color: var(--dark-color); }
+    .modal-body h3 { margin: 1.5rem 0 1rem 0; color: var(--dark-color); }
     .info-line { color: #666; margin-bottom: 1rem; }
     
     .filtro-fecha { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem; flex-wrap: wrap; }
@@ -178,16 +178,16 @@ import { format, subMonths } from 'date-fns';
     .form-group { margin-bottom: 1rem; }
     .form-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.875rem; }
     .input-field { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .input-field:focus { outline: none; border-color: #FFC107; }
+    .input-field:focus { outline: none; border-color: var(--primary-color); }
     
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
-    .btn-danger { background: #f8d7da; color: #D32F2F; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
+    .btn-danger { background: #f8d7da; color: var(--secondary-color); border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
     
     .ventas-list { max-height: 300px; overflow-y: auto; }
     .venta-item { background: #f8f9fa; border-radius: 8px; padding: 0.75rem; margin-bottom: 0.5rem; border-left: 4px solid #ccc; }
-    .venta-item.estado-pendiente { border-left-color: #D32F2F; }
+    .venta-item.estado-pendiente { border-left-color: var(--secondary-color); }
     .venta-item.estado-parcial { border-left-color: #FF9800; }
     .venta-item.estado-cancelado { border-left-color: #28a745; }
     .venta-main { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
@@ -197,13 +197,13 @@ import { format, subMonths } from 'date-fns';
     .venta-kg { color: #17a2b8; }
     .venta-total { font-weight: 600; }
     .venta-estado { padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
-    .venta-estado.pendiente { background: #f8d7da; color: #D32F2F; }
+    .venta-estado.pendiente { background: #f8d7da; color: var(--secondary-color); }
     .venta-estado.parcial { background: #fff3cd; color: #856404; }
     .venta-estado.cancelado { background: #d4edda; color: #155724; }
     .empty-ventas { color: #666; text-align: center; padding: 2rem; }
     
-    .resumen-total { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #2B2B2B; color: white; border-radius: 8px; margin-top: 1rem; }
-    .total-valor { font-size: 1.25rem; font-weight: 700; color: #FFC107; }
+    .resumen-total { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--dark-color); color: white; border-radius: 8px; margin-top: 1rem; }
+    .total-valor { font-size: 1.25rem; font-weight: 700; color: var(--primary-color); }
   `]
 })
 export class ClientesComponent implements OnInit {

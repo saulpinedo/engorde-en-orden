@@ -92,7 +92,7 @@ import { LotService, Vacuna } from '../../core/services/lot.service';
   styles: [`
     .page-container { max-width: 1200px; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
     
     .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -102,9 +102,9 @@ import { LotService, Vacuna } from '../../core/services/lot.service';
     .data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; }
     .data-table th { background: #f8f9fa; font-weight: 600; }
     .text-center { text-align: center; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
-    .btn-danger { background: #f8d7da; color: #D32F2F; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
+    .btn-danger { background: #f8d7da; color: var(--secondary-color); border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
     .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.25rem; padding: 0.25rem; }
     
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }

@@ -1,10 +1,12 @@
 @import 'primeicons/primeicons.css';
 
 :root {
-  --primary-color: #FFC107;
-  --secondary-color: #D32F2F;
-  --dark-color: #2B2B2B;
-  --light-bg: #f8f9fa;
+  /* Engorde En Orden — paleta oficial de marca */
+  --primary-color: #FFC107;     /* Amarillo Cálido */
+  --secondary-color: #D32F2F;   /* Rojo Pasión */
+  --dark-color: #2B2B2B;        /* Gris Oscuro Moderno */
+  --accent-color: #FF7043;      /* Naranja Vibrante */
+  --light-bg: #f8f9fa;          /* Blanco Puro (gris muy claro UI) */
   --success-color: #28a745;
   --warning-color: #ffc107;
   --danger-color: #d32f2f;
@@ -52,7 +54,7 @@ a:hover {
 
 .p-datatable .p-datatable-thead > tr > th {
   background: #f8f9fa;
-  color: #2B2B2B;
+  color: var(--dark-color);
   font-weight: 600;
   border-color: #e9ecef;
 }

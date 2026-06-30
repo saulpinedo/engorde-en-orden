@@ -12,8 +12,8 @@ import { AuthService } from '../../core/services/auth.service';
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
-          <span class="logo-icon">🐔</span>
-          <h1>EngordeEnOrden</h1>
+          <img src="logo.png" alt="Engorde En Orden" class="logo-icon">
+          <h1>Engorde <span class="brand-accent">En Orden</span></h1>
           <p class="tagline">Tecnología para crecer mejor</p>
         </div>
         
@@ -47,7 +47,7 @@ import { AuthService } from '../../core/services/auth.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #2B2B2B 0%, #444 100%);
+      background: linear-gradient(135deg, var(--dark-color) 0%, #444 100%);
       padding: 1rem;
     }
     .login-card {
@@ -63,19 +63,24 @@ import { AuthService } from '../../core/services/auth.service';
       margin-bottom: 2rem;
     }
     .logo-icon {
-      font-size: 4rem;
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
       display: block;
-      margin-bottom: 0.5rem;
+      margin: 0 auto 0.75rem;
     }
     .login-header h1 {
       margin: 0;
-      color: #2B2B2B;
-      font-size: 1.5rem;
+      color: var(--dark-color);
+      font-size: 1.6rem;
+      font-weight: 800;
     }
+    .brand-accent { color: var(--secondary-color); }
     .tagline {
       margin: 0.5rem 0 0 0;
       color: #666;
       font-size: 0.875rem;
+      letter-spacing: 0.05em;
     }
     .login-form {
       display: flex;
@@ -89,7 +94,7 @@ import { AuthService } from '../../core/services/auth.service';
     }
     .field label {
       font-weight: 500;
-      color: #2B2B2B;
+      color: var(--dark-color);
     }
     .input-field {
       padding: 0.75rem;
@@ -99,25 +104,28 @@ import { AuthService } from '../../core/services/auth.service';
     }
     .input-field:focus {
       outline: none;
-      border-color: #FFC107;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
     }
     .btn-primary {
-      background: #FFC107;
-      color: #2B2B2B;
+      background: var(--primary-color);
+      color: var(--dark-color);
       border: none;
       padding: 0.875rem;
       border-radius: 8px;
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
     }
     .btn-primary:hover {
       background: #e5ac00;
+      transform: translateY(-1px);
     }
     .btn-primary:disabled {
       background: #ccc;
       cursor: not-allowed;
+      transform: none;
     }
     .error-message {
       background: #f8d7da;

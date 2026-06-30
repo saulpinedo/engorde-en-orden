@@ -242,7 +242,7 @@ interface ResumenGastos {
   styles: [`
     .page-container { max-width: 1400px; margin: 0 auto; padding: 1rem; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
     .loading { text-align: center; padding: 3rem; color: #666; }
 
@@ -250,7 +250,7 @@ interface ResumenGastos {
     .filter-group { flex: 1; min-width: 160px; }
     .filter-group label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 0.25rem; }
     .input-field { width: 100%; padding: 0.625rem; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95rem; }
-    .input-field:focus { outline: none; border-color: #FFC107; }
+    .input-field:focus { outline: none; border-color: var(--primary-color); }
 
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .stat-card { background: white; border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -260,17 +260,17 @@ interface ResumenGastos {
     .stat-icon.azul { background: #d1ecf1; }
     .stat-icon.verde { background: #d4edda; }
     .stat-label { display: block; font-size: 0.75rem; color: #666; }
-    .stat-value { display: block; font-size: 1.5rem; font-weight: 700; color: #2B2B2B; }
+    .stat-value { display: block; font-size: 1.5rem; font-weight: 700; color: var(--dark-color); }
     .stat-sublabel { display: block; font-size: 0.75rem; color: #666; margin-top: 0.25rem; }
     .stat-card.ganancia-pos { border-left: 4px solid #28a745; }
-    .stat-card.ganancia-neg { border-left: 4px solid #D32F2F; }
-    .stat-card.ganancia-neg .stat-value { color: #D32F2F; }
+    .stat-card.ganancia-neg { border-left: 4px solid var(--secondary-color); }
+    .stat-card.ganancia-neg .stat-value { color: var(--secondary-color); }
 
     .categoria-breakdown { background: white; padding: 1rem 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
-    .categoria-breakdown h3 { margin: 0 0 0.75rem 0; font-size: 0.95rem; color: #2B2B2B; }
+    .categoria-breakdown h3 { margin: 0 0 0.75rem 0; font-size: 0.95rem; color: var(--dark-color); }
     .cat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; }
     .cat-item { display: flex; justify-content: space-between; padding: 0.5rem 0.75rem; background: #f8f9fa; border-radius: 6px; font-size: 0.875rem; }
-    .cat-total { font-weight: 600; color: #2B2B2B; }
+    .cat-total { font-weight: 600; color: var(--dark-color); }
 
     .card { background: white; border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
@@ -284,27 +284,27 @@ interface ResumenGastos {
     .badge-alimento { background: #d4edda; color: #155724; }
     .badge-insumos { background: #cce5ff; color: #004085; }
     .badge-mano_obra { background: #fff3cd; color: #856404; }
-    .badge-mantenimiento { background: #f8d7da; color: #D32F2F; }
+    .badge-mantenimiento { background: #f8d7da; color: var(--secondary-color); }
     .badge-otros { background: #e2d9f3; color: #5a32a3; }
 
     .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.25rem; }
-    .btn-danger-icon:hover { color: #D32F2F; }
-    .btn-link { background: none; border: none; color: #D32F2F; cursor: pointer; font-size: 0.8rem; padding: 0; text-decoration: underline; }
+    .btn-danger-icon:hover { color: var(--secondary-color); }
+    .btn-link { background: none; border: none; color: var(--secondary-color); cursor: pointer; font-size: 0.8rem; padding: 0; text-decoration: underline; }
 
     .empty-state { text-align: center; padding: 4rem; background: white; border-radius: 12px; }
     .empty-icon { display: inline-block; width: 80px; height: 80px; background: #f8f9fa; border-radius: 50%; line-height: 80px; font-size: 3rem; }
     .empty-state p { margin: 1rem 0 0 0; color: #666; }
 
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
     .btn-primary:disabled { background: #e9ecef; color: #999; cursor: not-allowed; }
     .btn-secondary { background: #e9ecef; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
-    .btn-danger { background: #f8d7da; color: #D32F2F; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
+    .btn-danger { background: #f8d7da; color: var(--secondary-color); border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer; }
 
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
     .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
-    .modal h3 { margin: 0 0 1.5rem 0; color: #2B2B2B; }
+    .modal h3 { margin: 0 0 1.5rem 0; color: var(--dark-color); }
     .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2B2B2B; font-size: 0.9rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--dark-color); font-size: 0.9rem; }
     .form-row { display: flex; gap: 1rem; }
     .form-row .form-group { flex: 1; }
     .foto-preview { margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }

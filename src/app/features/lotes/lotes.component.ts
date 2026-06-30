@@ -141,13 +141,13 @@ import { format } from 'date-fns';
   styles: [`
     .page-container { max-width: 1400px; margin: 0 auto; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .subtitle { margin: 0.25rem 0 0 0; color: #666; }
     
     .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
     .tab-btn { flex: 1; padding: 0.75rem; background: white; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
-    .tab-btn:hover { border-color: #FFC107; }
-    .tab-btn.active { background: #FFC107; border-color: #FFC107; color: #2B2B2B; }
+    .tab-btn:hover { border-color: var(--primary-color); }
+    .tab-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: var(--dark-color); }
     
     .badge-finalizado { display: inline-block; background: #6c757d; color: white; font-size: 0.65rem; padding: 0.125rem 0.5rem; border-radius: 4px; margin-left: 0.5rem; }
     .loading { text-align: center; padding: 3rem; color: #666; }
@@ -162,17 +162,17 @@ import { format } from 'date-fns';
     .tag-crecimiento { background: #d1ecf1; color: #0c5460; }
     .tag-engorde { background: #fff3cd; color: #856404; }
     .text-center { text-align: center; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .btn-secondary { background: #e9ecef; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-secondary { background: #e9ecef; color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; }
     .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.25rem; padding: 0.25rem; }
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; }
     .modal { background: white; border-radius: 16px; padding: 2rem; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
-    .modal h3 { margin: 0 0 1.5rem 0; color: #2B2B2B; }
+    .modal h3 { margin: 0 0 1.5rem 0; color: var(--dark-color); }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .form-group { margin-bottom: 0.5rem; }
-    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #2B2B2B; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--dark-color); }
     .input-field { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .input-field:focus { outline: none; border-color: #FFC107; }
+    .input-field:focus { outline: none; border-color: var(--primary-color); }
     .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
   `]
 })

@@ -214,7 +214,7 @@ import { format, subDays } from 'date-fns';
   styles: [`
     .page-container { max-width: 800px; margin: 0 auto; padding: 1rem; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
-    .page-header h1 { margin: 0; color: #2B2B2B; }
+    .page-header h1 { margin: 0; color: var(--dark-color); }
     .filtro-fecha { display: flex; align-items: center; gap: 0.5rem; }
     .filtro-fecha label { font-size: 0.875rem; color: #666; }
     .filtro-fecha select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; }
@@ -222,31 +222,31 @@ import { format, subDays } from 'date-fns';
     
     .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
     .tab-btn { flex: 1; padding: 0.75rem; background: white; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
-    .tab-btn:hover { border-color: #FFC107; }
-    .tab-btn.active { background: #FFC107; border-color: #FFC107; color: #2B2B2B; }
+    .tab-btn:hover { border-color: var(--primary-color); }
+    .tab-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: var(--dark-color); }
     
     .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
     .stat { background: white; flex: 1; padding: 1rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     .stat-label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 0.25rem; }
     .stat-value { font-size: 1.5rem; font-weight: 700; }
-    .stat-value.danger { color: #D32F2F; }
+    .stat-value.danger { color: var(--secondary-color); }
     .stat-value.success { color: #28a745; }
     
     .ventas-list { display: flex; flex-direction: column; gap: 1rem; }
     .venta-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid #ccc; }
-    .venta-card.estado-pendiente { border-left-color: #D32F2F; }
+    .venta-card.estado-pendiente { border-left-color: var(--secondary-color); }
     .venta-card.estado-parcial { border-left-color: #FF9800; }
     .venta-card.cancelada { border-left-color: #28a745; }
     
     .venta-main { display: flex; justify-content: space-between; align-items: center; padding: 1rem; cursor: pointer; }
     .venta-main:hover { background: #f8f9fa; }
-    .venta-info h3 { margin: 0; color: #2B2B2B; font-size: 1rem; }
+    .venta-info h3 { margin: 0; color: var(--dark-color); font-size: 1rem; }
     .venta-fecha { margin: 0.25rem 0 0 0; font-size: 0.875rem; color: #666; }
     .venta-placa { margin: 0; font-size: 0.875rem; color: #666; }
     .venta-monto { text-align: right; }
-    .venta-monto .total { display: block; font-size: 1.25rem; font-weight: 700; color: #2B2B2B; }
+    .venta-monto .total { display: block; font-size: 1.25rem; font-weight: 700; color: var(--dark-color); }
     .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem; }
-    .badge.pendiente { background: #f8d7da; color: #D32F2F; }
+    .badge.pendiente { background: #f8d7da; color: var(--secondary-color); }
     .badge.parcial { background: #fff3cd; color: #856404; }
     .badge.cancelado { background: #d4edda; color: #155724; }
     .toggle { margin-left: 0.5rem; color: #666; }
@@ -257,7 +257,7 @@ import { format, subDays } from 'date-fns';
     .detail-row span { color: #666; }
     .detail-row.highlight { background: #fff3cd; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; }
     .text-success { color: #28a745; }
-    .text-danger { color: #D32F2F; }
+    .text-danger { color: var(--secondary-color); }
     
     .pagos-anteriores { margin: 1rem 0; padding: 1rem; background: white; border-radius: 8px; }
     .pagos-anteriores h4 { margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #28a745; }
@@ -270,8 +270,8 @@ import { format, subDays } from 'date-fns';
     .abonar-form input { flex: 1; }
     .abonar-form select { width: 140px; }
     .input-field { padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-    .input-field:focus { outline: none; border-color: #FFC107; }
-    .btn-primary { background: #FFC107; color: #2B2B2B; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .input-field:focus { outline: none; border-color: var(--primary-color); }
+    .btn-primary { background: var(--primary-color); color: var(--dark-color); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
     
     .empty-state { text-align: center; padding: 3rem; background: white; border-radius: 12px; }
     .empty-icon { display: inline-block; width: 60px; height: 60px; background: #d4edda; color: #155724; border-radius: 50%; line-height: 60px; font-size: 2rem; }
