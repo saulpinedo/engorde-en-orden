@@ -53,7 +53,8 @@ import { format, subDays } from 'date-fns';
                 <div class="venta-card" [class]="'estado-' + venta.estado.toLowerCase()">
                   <div class="venta-main" (click)="toggleVenta(venta.id!)">
                     <div class="venta-info">
-                      <h3>{{ venta.cliente?.nombre || 'Sin cliente' }}</h3>
+                      <h3>{{ venta.clienteNombre || 'Sin cliente' }}</h3>
+                      <p class="venta-fecha">{{venta.loteNombre }}</p>
                       <p class="venta-fecha">{{ formatDate(venta.fecha) }}</p>
                       @if (venta.placa) { <p class="venta-placa">🚗 {{ venta.placa }}</p> }
                     </div>
@@ -156,7 +157,8 @@ import { format, subDays } from 'date-fns';
                 <div class="venta-card cancelada">
                   <div class="venta-main" (click)="toggleVenta(venta.id!)">
                     <div class="venta-info">
-                      <h3>{{ venta.cliente?.nombre || 'Sin cliente' }}</h3>
+                      <h3>{{ venta.clienteNombre || 'Sin cliente' }}</h3>
+                      <p class="venta-fecha">{{venta.loteNombre }}</p>
                       <p class="venta-fecha">{{ formatDate(venta.fecha) }}</p>
                       @if (venta.placa) { <p class="venta-placa">🚗 {{ venta.placa }}</p> }
                     </div>
@@ -284,13 +286,13 @@ export class PagosComponent implements OnInit {
   loading = signal(true);
   tabActual = signal<'pendientes' | 'canceladas'>('pendientes');
   filtroDias = 30;
-  
+
   ventasPendientes = signal<Venta[]>([]);
   ventasCanceladas = signal<Venta[]>([]);
   todasLasVentas = signal<Venta[]>([]);
   todosLosPagos = signal<Pago[]>([]);
   expandedVentas = signal<Set<string>>(new Set());
-  
+
   abonoMonto: { [key: string]: number } = {};
   abonoMetodo: { [key: string]: 'EFECTIVO' | 'TRANSFERENCIA' | 'OTRO' } = {};
 
@@ -303,21 +305,21 @@ export class PagosComponent implements OnInit {
     try {
       const ventas = await this.lotService.getVentas();
       this.todasLasVentas.set(ventas);
-      
-      const fechaLimite = this.filtroDias > 0 
+
+      const fechaLimite = this.filtroDias > 0
         ? format(subDays(new Date(), this.filtroDias), 'yyyy-MM-dd')
         : null;
-      
-      const filtradas = fechaLimite 
+
+      const filtradas = fechaLimite
         ? ventas.filter(v => v.fecha >= fechaLimite)
         : ventas;
-      
+
       const pendientes = filtradas.filter(v => v.estado !== 'CANCELADO');
       const canceladas = filtradas.filter(v => v.estado === 'CANCELADO');
-      
+
       this.ventasPendientes.set(pendientes);
       this.ventasCanceladas.set(canceladas);
-      
+
       const pagos: Pago[] = [];
       for (const venta of [...pendientes, ...canceladas]) {
         if (venta.id) {
@@ -326,7 +328,7 @@ export class PagosComponent implements OnInit {
         }
       }
       this.todosLosPagos.set(pagos);
-      
+
       pendientes.forEach(v => {
         if (v.id) {
           const saldo = this.calculateSaldo(v, pagos.filter(p => p.ventaId === v.id));
@@ -410,12 +412,12 @@ export class PagosComponent implements OnInit {
   async registrarAbono(venta: Venta): Promise<void> {
     const monto = this.abonoMonto[venta.id!];
     const metodo = this.abonoMetodo[venta.id!];
-    
+
     if (!monto || monto <= 0) {
       alert('Ingresa un monto válido');
       return;
     }
-    
+
     const saldo = this.getSaldo(venta);
     if (monto > saldo) {
       if (!confirm(`El monto excede el saldo de ${saldo.toFixed(2)} Bs. ¿Desea continuar?`)) {
@@ -430,7 +432,7 @@ export class PagosComponent implements OnInit {
         fecha: format(new Date(), 'yyyy-MM-dd'),
         metodo
       });
-      
+
       await this.loadData();
     } catch (e: any) {
       alert('Error: ' + e.message);
